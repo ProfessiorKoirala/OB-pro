@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#000000" />
+    <title>OB Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+              handwriting: ['Caveat', 'cursive'],
+            },
+            colors: {
+              primary: '#000000',
+              secondary: '#1F2937',
+              accent: '#2ECC71',
+              background: '#FFFFFF',
+              surface: '#F9FAFB',
+              'text-primary': '#111827',
+              'text-secondary': '#6B7280',
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.4s ease-out',
+              'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              'slide-down': 'slideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
+              'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: 0, transform: 'scale(0.99)' },
+                '100%': { opacity: 1, transform: 'scale(1)' },
+              },
+              slideUp: {
+                 '0%': { transform: 'translate3d(0, 15px, 0)', opacity: 0 },
+                 '100%': { transform: 'translate3d(0, 0, 0)', opacity: 1 },
+              },
+              slideDown: {
+                 '0%': { transform: 'translate3d(0, -15px, 0)', opacity: 0 },
+                 '100%': { transform: 'translate3d(0, 0, 0)', opacity: 1 },
+              },
+              pulseSoft: {
+                '0%, 100%': { opacity: 1 },
+                '50%': { opacity: 0.8 },
+              },
+              shake: {
+                '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                '40%, 60%': { transform: 'translate3d(4px, 0, 0)' },
+              }
+            }
+          },
+        },
+      }
+    </script>
+    <style>
+      :root {
+        --color-primary: 0, 0, 0;
+        --color-secondary: 31, 41, 55;
+        --color-accent: 46, 204, 113;
+        --color-background: 255, 255, 255;
+        --color-surface: 249, 250, 251;
+        --color-text-primary: 17, 24, 39;
+        --color-text-secondary: 107, 114, 128;
+      }
+      .dark {
+        --color-background: 17, 24, 39;
+        --color-surface: 31, 41, 55;
+        --color-text-primary: 249, 250, 251;
+        --color-text-secondary: 156, 163, 175;
+      }
+
+      html, body, #root {
+        height: 100%;
+        background-color: #FFFFFF;
+        -webkit-font-smoothing: antialiased;
+        scrollbar-gutter: stable;
+      }
+      
+      .dark body, .dark #root {
+        background-color: #111827;
+      }
+      
+      body {
+        overscroll-behavior-y: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .gpu-accelerated {
+        transform: translate3d(0,0,0);
+        backface-visibility: hidden;
+        will-change: transform, opacity;
+      }
+
+      ::-webkit-scrollbar { display: none; }
+      * { -ms-overflow-style: none; scrollbar-width: none; }
+
+      .card-shadow {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      }
+
+      .input-field {
+        background: #F8F9FB;
+        border: 1px solid #E5E7EB;
+        border-radius: 16px;
+        padding: 16px 20px;
+        font-size: 16px;
+        width: 100%;
+        color: #000000 !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .input-field:focus {
+        background: #FFFFFF;
+        box-shadow: 0 0 0 2px #000000;
+        outline: none;
+        border-color: #000000;
+      }
+      
+      .dark .input-field {
+        background: #1F2937;
+        color: #FFFFFF !important;
+        border-color: #374151;
+      }
+
+      .primary-button {
+        background: #000000;
+        color: #FFFFFF;
+        border-radius: 16px;
+        padding: 16px;
+        font-weight: 700;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: transform 0.1s, opacity 0.2s;
+      }
+      .primary-button:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+      }
+      
+      .dark .primary-button {
+        background: #F9FAFB;
+        color: #000000;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.3.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0",
+    "@react-oauth/google": "https://aistudiocdn.com/@react-oauth/google@^0.12.2",
+    "react-dom": "https://esm.sh/react-dom@^19.2.4"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

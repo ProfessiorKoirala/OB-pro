@@ -1,0 +1,7 @@
+{
+  "name": "OB Pro",
+  "description": "A high-performance business management terminal for modern entrepreneurs. Track inventory, sales, and logistics with precision and speed.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
