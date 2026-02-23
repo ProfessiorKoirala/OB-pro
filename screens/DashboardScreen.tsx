@@ -250,8 +250,13 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
             <header className="px-6 pt-12 pb-4 flex items-center justify-between sticky top-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md z-30 shrink-0 transition-colors">
                 <div className="flex items-center gap-3">
                     {!isDesktop && (
-                        <button onClick={() => setIsMenuOpen(true)} className="relative group shrink-0">
-                            <img src={businessProfile.profilePic || 'https://i.pravatar.cc/150'} className="w-10 h-10 rounded-xl object-cover border border-gray-100 dark:border-gray-800 shadow-sm" alt="profile" />
+                        <button onClick={() => setIsMenuOpen(true)} className="flex items-center gap-2 group shrink-0 bg-gray-50 dark:bg-gray-800 p-1.5 rounded-2xl border border-gray-100 dark:border-gray-700 active:scale-95 transition-all">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            </div>
+                            <img src={businessProfile.profilePic || 'https://i.pravatar.cc/150'} className="w-8 h-8 rounded-lg object-cover border border-white dark:border-gray-600 shadow-sm" alt="profile" />
                         </button>
                     )}
                     <div>

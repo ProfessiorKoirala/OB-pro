@@ -134,13 +134,22 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
     ];
 
     return (
-        <aside className={`bg-[#F8F9FB] dark:bg-gray-950 transition-all duration-300 border-r dark:border-gray-800 flex flex-col overflow-hidden relative ${isCollapsed ? 'w-24' : 'w-[310px]'}`}>
+        <aside className={`bg-[#F8F9FB] dark:bg-gray-950 transition-all duration-300 border-r dark:border-gray-800 flex flex-col relative ${isCollapsed ? 'w-24' : 'w-[310px]'}`}>
             {/* Collapse Toggle */}
             <button 
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="absolute top-4 -right-3 z-[70] w-6 h-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-full flex items-center justify-center shadow-sm hover:scale-110 transition-all"
+                className="absolute top-6 -right-4 z-[70] w-8 h-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-all group"
+                title={isCollapsed ? "Expand Menu" : "Collapse Menu"}
             >
-                <svg className={`w-3 h-3 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                {isCollapsed ? (
+                    <svg className="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                ) : (
+                    <svg className="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
+                    </svg>
+                )}
             </button>
 
             {/* Paper Plane Animation Overlay */}
@@ -208,25 +217,27 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
             </nav>
 
             {/* Footer Actions */}
-            <div className={`px-4 pb-4 pt-3 border-t dark:border-gray-900 shrink-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex items-center gap-2 ${isCollapsed ? 'flex-col' : ''}`}>
+            <div className={`px-3 pb-6 pt-4 border-t dark:border-gray-900 shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md flex items-center gap-2 ${isCollapsed ? 'flex-col px-2' : ''}`}>
                 <div 
                     onClick={onLogout}
-                    className={`flex items-center gap-4 py-3 px-4 rounded-[24px] cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/10 group transition-all ${isCollapsed ? 'justify-center w-full' : 'flex-1'}`}
+                    className={`flex items-center gap-3 py-3 px-3 rounded-[20px] cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 group transition-all ${isCollapsed ? 'justify-center w-full' : 'flex-1'}`}
+                    title="Sign Out"
                 >
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-red-100 dark:bg-red-900/30 text-red-500 shadow-sm">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-red-100 dark:bg-red-900/30 text-red-500 shadow-sm group-hover:scale-110 transition-transform">
                         <LogoutIcon className="w-5 h-5" />
                     </div>
                     {!isCollapsed && (
                         <div className="flex-1 min-w-0">
-                            <p className="text-[15px] font-bold text-red-600 leading-tight">Sign Out</p>
-                            <p className="text-[10px] text-red-300 font-medium">End session</p>
+                            <p className="text-[14px] font-bold text-red-600 leading-tight">Sign Out</p>
+                            <p className="text-[9px] text-red-400 font-medium uppercase tracking-tighter">End session</p>
                         </div>
                     )}
                 </div>
                 
                 <button 
                     onClick={() => setCurrentView(MainView.SETTINGS)}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-black dark:hover:text-white transition-all shadow-sm border border-gray-50 dark:border-gray-700 shrink-0 ${isCollapsed ? 'w-full rounded-2xl' : ''}`}
+                    className={`w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition-all shadow-sm border border-gray-200 dark:border-gray-700 shrink-0 ${isCollapsed ? 'w-full rounded-2xl' : ''}`}
+                    title="Settings"
                 >
                     <SettingsIcon className="w-6 h-6" />
                 </button>

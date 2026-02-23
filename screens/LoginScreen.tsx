@@ -63,8 +63,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalLogin, onLocalSignUp, 
 
   const handleGoogleLogin = async () => {
     try {
-      const response = await fetch('/api/auth/google/url');
-      if (!response.ok) throw new Error('Failed to get auth URL');
+      const apiBase = (import.meta as any).env.VITE_API_URL || '';
+      const apiUrl = `${apiBase}/api/auth/google/url`;
+      console.log(`[Auth] Fetching Google Auth URL from: ${apiUrl}`);
+      const response = await fetch(apiUrl);
+      if (!response.ok) throw new Error(`Failed to get auth URL: ${response.status} ${response.statusText}`);
       const { url } = await response.json();
       
       const width = 500;
@@ -79,7 +82,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalLogin, onLocalSignUp, 
       );
     } catch (err) {
       console.error("Google login error:", err);
-      setError("Failed to start Google login.");
+      setError("Failed to start Google login. Please ensure the backend is running and APP_URL is configured correctly.");
     }
   };
 

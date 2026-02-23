@@ -3,6 +3,7 @@ import { createServer as createViteServer } from "vite";
 import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
+import cors from "cors";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,6 +11,14 @@ const __dirname = path.dirname(__filename);
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  app.set('trust proxy', true);
+
+  // Enable CORS for all origins in development, or specific origin in production
+  app.use(cors({
+    origin: process.env.APP_URL || true,
+    credentials: true
+  }));
 
   app.use(express.json());
   app.use(cookieParser());
@@ -21,7 +30,11 @@ async function startServer() {
       const protocol = req.headers['x-forwarded-proto'] || req.protocol;
       baseUrl = `${protocol}://${host}`;
     }
-    return `${baseUrl.replace(/\/$/, '')}/auth/google/callback`;
+    // Ensure baseUrl doesn't have a trailing slash before appending path
+    const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+    const redirectUri = `${cleanBaseUrl}/auth/google/callback`;
+    console.log(`[OAuth] Using Redirect URI: ${redirectUri}`);
+    return redirectUri;
   };
 
   // Google OAuth Endpoints
