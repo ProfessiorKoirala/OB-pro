@@ -332,7 +332,7 @@ const TableView: React.FC<TableViewProps> = (props) => {
                 )}
 
                 {activeSegment === 'TABLES' && (
-                    <div className="grid grid-cols-2 gap-4 mt-8 animate-fade-in pb-40">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mt-8 animate-fade-in pb-40">
                         {tables.map(table => (
                             <TableCard 
                                 key={table.id} 
@@ -377,7 +377,7 @@ const TableView: React.FC<TableViewProps> = (props) => {
                 )}
 
                 {activeSegment === 'TAKEAWAY' && (
-                    <div className="grid grid-cols-2 gap-4 mt-8 animate-fade-in pb-40">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mt-8 animate-fade-in pb-40">
                         {takeawayDrafts.map(order => (
                             <TakeawayCard 
                                 key={order.id} 

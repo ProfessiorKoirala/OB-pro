@@ -171,6 +171,46 @@ const AppContent: React.FC = () => {
         setAppState('AUTHENTICATING_USER');
     }, []);
 
+    useEffect(() => {
+        const handleMessage = async (event: MessageEvent) => {
+            if (event.data?.type === 'GOOGLE_AUTH_SUCCESS') {
+                const tokens = event.data.tokens;
+                const accessToken = tokens.access_token;
+                
+                try {
+                    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                        headers: { Authorization: `Bearer ${accessToken}` },
+                    });
+                    const gUser = await userInfoResponse.json();
+                    const userId = `google-${gUser.sub}`;
+                    
+                    setUsers(prevUsers => {
+                        const existingUser = prevUsers.find(u => u.id === userId);
+                        const userForAuth: User = {
+                            ...(existingUser || {}),
+                            id: userId,
+                            name: existingUser?.name || gUser.email.split('@')[0],
+                            email: gUser.email,
+                            profilePicUrl: existingUser?.profilePicUrl || `https://i.pravatar.cc/150?u=${gUser.email}`,
+                            accountType: 'google',
+                            accessToken: accessToken,
+                        };
+                        const updatedUsers = prevUsers.some(u => u.id === userId)
+                            ? prevUsers.map(u => (u.id === userId ? userForAuth : u))
+                            : [...prevUsers, userForAuth];
+                        localStorage.setItem('ob-pro-users', JSON.stringify(updatedUsers));
+                        handleSelectAccount(userForAuth);
+                        return updatedUsers;
+                    });
+                } catch (error) {
+                    console.error("Failed to fetch user info after Google login:", error);
+                }
+            }
+        };
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, [handleSelectAccount]);
+
     const handleBiometricLogin = useCallback(async (user: User) => {
         if (user.biometricCredentialId) {
             const success = await authenticateBiometric(user.biometricCredentialId);

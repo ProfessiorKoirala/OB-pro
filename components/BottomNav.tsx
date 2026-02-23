@@ -5,6 +5,7 @@ import HomeIcon from './icons/HomeIcon';
 import SalesIcon from './icons/SalesIcon';
 import ExpenseIcon from './icons/ExpenseIcon';
 import BoxIcon from './icons/BoxIcon';
+import { triggerHaptic, HapticPatterns } from '../utils/hapticUtils';
 
 const navItems = [
   { view: MainView.DASHBOARD, label: "Home", Icon: HomeIcon },
@@ -27,7 +28,10 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setCurrentView }) =>
                     return (
                         <button
                             key={item.view}
-                            onClick={() => setCurrentView(item.view)}
+                            onClick={() => {
+                                triggerHaptic(HapticPatterns.LIGHT);
+                                setCurrentView(item.view);
+                            }}
                             className={`flex-1 flex flex-col items-center justify-center py-3 px-2 rounded-[24px] transition-all duration-300 ${
                                 isActive ? 'bg-black dark:bg-white text-white dark:text-black shadow-lg' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'
                             }`}

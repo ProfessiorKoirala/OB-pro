@@ -61,6 +61,28 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalLogin, onLocalSignUp, 
     onGoogleSignInClick(); // Triggers the Premium Feature screen
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      const response = await fetch('/api/auth/google/url');
+      if (!response.ok) throw new Error('Failed to get auth URL');
+      const { url } = await response.json();
+      
+      const width = 500;
+      const height = 600;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      
+      window.open(
+        url,
+        'google_login',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+    } catch (err) {
+      console.error("Google login error:", err);
+      setError("Failed to start Google login.");
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900 transition-colors relative overflow-hidden">
       {/* Header Branding */}
@@ -156,7 +178,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalLogin, onLocalSignUp, 
             <div className="flex items-center justify-center gap-3 overflow-x-auto no-scrollbar pb-2">
                 <SocialIcon borderColor="border-blue-100" onClick={handlePremiumAction} label="Facebook" icon={<svg className="w-6 h-6 text-[#3b5998]" fill="currentColor" viewBox="0 0 24 24"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>} />
                 <SocialIcon borderColor="border-gray-100" onClick={handlePremiumAction} label="Apple" icon={<svg className="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M17.057 10.742c-.015-2.07 1.688-3.067 1.762-3.116-1.01-1.479-2.585-1.681-3.14-1.705-1.332-.136-2.602.784-3.277.784-.674 0-1.724-.766-2.83-.744-1.455.022-2.795.845-3.543 2.146-1.51 2.622-.386 6.51 1.077 8.622.715 1.031 1.564 2.188 2.684 2.146 1.078-.044 1.486-.699 2.79-.699s1.673.699 2.812.677c1.157-.022 1.915-1.054 2.62-2.072.816-1.189 1.152-2.339 1.171-2.399-.025-.011-2.254-.866-2.278-3.41zM14.512 5.093c.6-.726 1.003-1.735.892-2.743-.866.035-1.915.576-2.537 1.299-.556.637-.993 1.666-.862 2.646.966.074 1.905-.476 2.507-1.202z"/></svg>} />
-                <SocialIcon borderColor="border-amber-100" onClick={handlePremiumAction} label="Google" icon={<GoogleIcon className="w-8 h-8" />} />
+                <SocialIcon borderColor="border-amber-100" onClick={handleGoogleLogin} label="Google" icon={<GoogleIcon className="w-8 h-8" />} />
                 <SocialIcon borderColor="border-blue-100" onClick={handlePremiumAction} label="LinkedIn" icon={<svg className="w-6 h-6 text-[#0077b5]" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>} />
                 <SocialIcon borderColor="border-blue-50" onClick={handlePremiumAction} label="Twitter" icon={<svg className="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.045 4.126H5.078z"/></svg>} />
             </div>

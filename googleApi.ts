@@ -1,12 +1,12 @@
 import { AppDataBackup } from "./types";
 
 // Using the Desktop/Installed App client ID for the loopback redirect flow needed for an .exe file.
-export const GOOGLE_CLIENT_ID = '536889580517-khp1pod4m36o47pbnfej97lhht3obon7.apps.googleusercontent.com';
+export const GOOGLE_CLIENT_ID = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || '536889580517-khp1pod4m36o47pbnfej97lhht3obon7.apps.googleusercontent.com';
 
 // --- SCOPES ---
 // drive.file: Per-file access to files created or opened by the app. The user can see these files in their Drive.
 // userinfo.email: To get the user's email address.
-export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.metadata.readonly';
 export const USERINFO_SCOPES = 'https://www.googleapis.com/auth/userinfo.email';
 export const COMBINED_SCOPES = `${DRIVE_SCOPE} ${USERINFO_SCOPES}`;
 const DATA_FILE_NAME = 'mynagerData.json';
@@ -53,12 +53,14 @@ async function getDriveFileId(accessToken: string): Promise<string | null> {
         }
         
         // Search for files named DATA_FILE_NAME that are not trashed.
-        const response = await authorizedFetch(`https://www.googleapis.com/drive/v3/files?q=name='${DATA_FILE_NAME}' and trashed=false&fields=files(id,name)`, {
+        const query = encodeURIComponent(`name='${DATA_FILE_NAME}' and trashed=false`);
+        const response = await authorizedFetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`, {
             headers: new Headers({ 'Authorization': `Bearer ${accessToken}` }),
         });
         
         const data = await response.json();
         if (!response.ok) {
+            console.error("Google Drive API Error (getDriveFileId):", data);
             throw data;
         }
         
@@ -92,6 +94,7 @@ export async function loadDataFromDrive(accessToken: string): Promise<AppDataBac
 
         const data = await response.json();
         if (!response.ok) {
+            console.error("Google Drive API Error (loadDataFromDrive):", data);
             throw data;
         }
         
@@ -147,6 +150,7 @@ export async function saveDataToDrive(accessToken: string, data: AppDataBackup) 
 
         if (!response.ok) {
             const errorBody = await response.json().catch(() => ({}));
+            console.error("Google Drive API Error (saveDataToDrive):", errorBody);
             throw errorBody;
         }
 

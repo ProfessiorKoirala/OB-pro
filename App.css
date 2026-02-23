@@ -133,3 +133,48 @@
     .sidebar-nav-item:nth-child(3) { animation-delay: 0.15s; }
     .sidebar-nav-item:nth-child(4) { animation-delay: 0.2s; }
 }
+
+/* Tablet Optimizations */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .tablet-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+}
+
+/* Samsung / Mobile Optimizations */
+@media (max-width: 767px) {
+    .primary-button {
+        padding: 18px !important;
+    }
+}
+
+/* Computer / Desktop Enhancements */
+@media (min-width: 1024px) {
+    .sidebar-nav-item:hover {
+        background-color: rgba(var(--color-text-primary), 0.08);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Custom Scrollbar for Desktop */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+        display: block !important;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+    }
+    
+    .dark ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+    }
+}
+

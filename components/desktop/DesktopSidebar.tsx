@@ -38,7 +38,8 @@ const NavItem: React.FC<{
     label: string;
     subLabel: string;
     iconColor: string;
-}> = ({ view, currentView, setCurrentView, icon, label, subLabel, iconColor }) => {
+    isCollapsed: boolean;
+}> = ({ view, currentView, setCurrentView, icon, label, subLabel, iconColor, isCollapsed }) => {
     const isActive = view === currentView;
     return (
         <div
@@ -47,19 +48,21 @@ const NavItem: React.FC<{
                 isActive 
                 ? 'bg-gray-100 dark:bg-gray-700 shadow-sm' 
                 : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-            }`}
+            } ${isCollapsed ? 'justify-center px-0' : ''}`}
         >
             <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${iconColor} text-white shadow-sm`}>
                 {React.cloneElement(icon as React.ReactElement<any>, { className: 'w-5 h-5' })}
             </div>
-            <div className="flex-1 min-w-0">
-                <p className={`text-[15px] font-bold leading-tight truncate ${isActive ? 'text-black dark:text-white' : 'text-gray-800 dark:text-gray-200'}`}>
-                    {label}
-                </p>
-                <p className="text-[11px] text-gray-400 font-medium truncate mt-0.5">
-                    {subLabel}
-                </p>
-            </div>
+            {!isCollapsed && (
+                <div className="flex-1 min-w-0">
+                    <p className={`text-[15px] font-bold leading-tight truncate ${isActive ? 'text-black dark:text-white' : 'text-gray-800 dark:text-gray-200'}`}>
+                        {label}
+                    </p>
+                    <p className="text-[11px] text-gray-400 font-medium truncate mt-0.5">
+                        {subLabel}
+                    </p>
+                </div>
+            )}
         </div>
     );
 };
@@ -68,6 +71,7 @@ const Divider = () => <div className="mx-6 my-2 border-t border-dashed border-gr
 
 const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView, setCurrentView, onLogout, settings }) => {
     const [animatePlane, setAnimatePlane] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
     useEffect(() => {
         const triggerFlight = () => {
@@ -130,7 +134,15 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
     ];
 
     return (
-        <aside className="desktop-sidebar bg-[#F8F9FB] dark:bg-gray-950 transition-colors border-r dark:border-gray-800 flex flex-col overflow-hidden relative">
+        <aside className={`bg-[#F8F9FB] dark:bg-gray-950 transition-all duration-300 border-r dark:border-gray-800 flex flex-col overflow-hidden relative ${isCollapsed ? 'w-24' : 'w-[310px]'}`}>
+            {/* Collapse Toggle */}
+            <button 
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="absolute top-4 -right-3 z-[70] w-6 h-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-full flex items-center justify-center shadow-sm hover:scale-110 transition-all"
+            >
+                <svg className={`w-3 h-3 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+
             {/* Paper Plane Animation Overlay */}
             {animatePlane && (
                 <div className="absolute inset-0 pointer-events-none z-[60]">
@@ -147,17 +159,19 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
                 <div className="px-4 mb-8">
                     <button 
                         onClick={() => setCurrentView(MainView.PROFILE)}
-                        className="w-full bg-white dark:bg-gray-900 p-6 rounded-[36px] flex items-center justify-between gap-4 shadow-sm border border-gray-100 dark:border-gray-800 active:scale-[0.98] transition-all text-left group"
+                        className={`w-full bg-white dark:bg-gray-900 rounded-[36px] flex items-center gap-4 shadow-sm border border-gray-100 dark:border-gray-800 active:scale-[0.98] transition-all text-left group ${isCollapsed ? 'p-2 justify-center' : 'p-6 justify-between'}`}
                     >
-                        <div className="flex-1 min-w-0">
-                            <p className="font-black text-black dark:text-white text-2xl tracking-tighter truncate uppercase italic leading-none mb-2">{activeUser.name}</p>
-                            <p className="text-[11px] text-gray-400 font-black uppercase tracking-[0.2em] leading-none">Ordinary Business OB</p>
-                        </div>
+                        {!isCollapsed && (
+                            <div className="flex-1 min-w-0">
+                                <p className="font-black text-black dark:text-white text-2xl tracking-tighter truncate uppercase italic leading-none mb-2">{activeUser.name}</p>
+                                <p className="text-[11px] text-gray-400 font-black uppercase tracking-[0.2em] leading-none">Ordinary Business OB</p>
+                            </div>
+                        )}
                         <div className="relative shrink-0">
                             <img 
                                 src={activeUser.profilePicUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${activeUser.name}`} 
                                 alt={activeUser.name} 
-                                className="w-20 h-20 rounded-[28px] border-2 border-white dark:border-gray-700 shadow-lg object-cover group-hover:scale-105 transition-transform" 
+                                className={`${isCollapsed ? 'w-12 h-12 rounded-2xl' : 'w-20 h-20 rounded-[28px]'} border-2 border-white dark:border-gray-700 shadow-lg object-cover group-hover:scale-105 transition-transform`} 
                             />
                             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
                         </div>
@@ -168,9 +182,11 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
 
                 {navigationGroups.map((group, gIdx) => (
                     <div key={gIdx} className="mb-4">
-                        <div className="px-4 py-2">
-                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] ml-2">{group.title}</p>
-                        </div>
+                        {!isCollapsed && (
+                            <div className="px-4 py-2">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] ml-2">{group.title}</p>
+                            </div>
+                        )}
                         <div className="space-y-0.5">
                             {group.items.map(item => (
                                 <NavItem 
@@ -182,6 +198,7 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
                                     subLabel={item.subLabel}
                                     icon={item.icon}
                                     iconColor={item.color}
+                                    isCollapsed={isCollapsed}
                                 />
                             ))}
                         </div>
@@ -191,23 +208,25 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
             </nav>
 
             {/* Footer Actions */}
-            <div className="px-4 pb-4 pt-3 border-t dark:border-gray-900 shrink-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex items-center gap-2">
+            <div className={`px-4 pb-4 pt-3 border-t dark:border-gray-900 shrink-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex items-center gap-2 ${isCollapsed ? 'flex-col' : ''}`}>
                 <div 
                     onClick={onLogout}
-                    className="flex-1 flex items-center gap-4 py-3 px-4 rounded-[24px] cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/10 group transition-all"
+                    className={`flex items-center gap-4 py-3 px-4 rounded-[24px] cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/10 group transition-all ${isCollapsed ? 'justify-center w-full' : 'flex-1'}`}
                 >
                     <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-red-100 dark:bg-red-900/30 text-red-500 shadow-sm">
                         <LogoutIcon className="w-5 h-5" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-[15px] font-bold text-red-600 leading-tight">Sign Out</p>
-                        <p className="text-[10px] text-red-300 font-medium">End session</p>
-                    </div>
+                    {!isCollapsed && (
+                        <div className="flex-1 min-w-0">
+                            <p className="text-[15px] font-bold text-red-600 leading-tight">Sign Out</p>
+                            <p className="text-[10px] text-red-300 font-medium">End session</p>
+                        </div>
+                    )}
                 </div>
                 
                 <button 
                     onClick={() => setCurrentView(MainView.SETTINGS)}
-                    className="w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-black dark:hover:text-white transition-all shadow-sm border border-gray-50 dark:border-gray-700 shrink-0"
+                    className={`w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-black dark:hover:text-white transition-all shadow-sm border border-gray-50 dark:border-gray-700 shrink-0 ${isCollapsed ? 'w-full rounded-2xl' : ''}`}
                 >
                     <SettingsIcon className="w-6 h-6" />
                 </button>
