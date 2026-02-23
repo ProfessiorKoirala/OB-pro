@@ -41,23 +41,23 @@ const MenuItem: React.FC<{
 }> = ({ icon, label, subLabel, onClick, iconColor }) => (
     <button 
         onClick={onClick} 
-        className="w-full flex items-center gap-4 p-4 rounded-[28px] active:bg-gray-100 transition-all text-left mb-1"
+        className="w-full flex items-center gap-4 p-4 rounded-[28px] active:bg-gray-100 dark:active:bg-gray-800 transition-all text-left mb-1"
     >
         <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${iconColor} text-white shadow-sm`}>
             {React.cloneElement(icon as React.ReactElement, { className: 'w-5 h-5' } as any)}
         </div>
         <div className="flex-1 min-w-0">
-            <p className="text-[15px] font-bold text-black leading-tight truncate">
+            <p className="text-[15px] font-bold text-black dark:text-white leading-tight truncate">
                 {label}
             </p>
-            <p className="text-[11px] text-gray-400 font-medium truncate mt-0.5">
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium truncate mt-0.5">
                 {subLabel}
             </p>
         </div>
     </button>
 );
 
-const Divider = () => <div className="mx-6 my-2 border-t border-dashed border-gray-100" />;
+const Divider = () => <div className="mx-6 my-2 border-t border-dashed border-gray-100 dark:border-gray-800" />;
 
 const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, setCurrentView, activeUser, settings, onLogout }) => {
     const [animatePlane, setAnimatePlane] = useState(false);
@@ -133,7 +133,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, setCurrentView, ac
                 className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-500 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                 onClick={onClose}
             />
-            <div className={`fixed top-0 left-0 h-full w-[85%] max-w-[340px] bg-[#F8F9FB] z-50 shadow-2xl flex flex-col transition-transform duration-500 cubic-bezier(0.16,1,0.3,1) ${isOpen ? 'translate-x-0' : '-translate-x-full'} gpu-accelerated overflow-hidden`}>
+            <div className={`fixed top-0 left-0 h-full w-[85%] max-w-[340px] bg-[#F8F9FB] dark:bg-gray-900 z-50 shadow-2xl flex flex-col transition-transform duration-500 cubic-bezier(0.16,1,0.3,1) ${isOpen ? 'translate-x-0' : '-translate-x-full'} gpu-accelerated overflow-hidden`}>
                 
                 {/* Paper Plane Animation Overlay */}
                 {animatePlane && (
@@ -153,19 +153,19 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, setCurrentView, ac
                     <div className="px-4 mb-8">
                         <button 
                             onClick={() => navigate(MainView.PROFILE)}
-                            className="w-full bg-white p-6 rounded-[36px] flex items-center justify-between gap-4 shadow-sm border border-gray-100 active:scale-[0.98] transition-all text-left group"
+                            className="w-full bg-white dark:bg-gray-800 p-6 rounded-[36px] flex items-center justify-between gap-4 shadow-sm border border-gray-100 dark:border-gray-700 active:scale-[0.98] transition-all text-left group"
                         >
                             <div className="flex-1 min-w-0">
-                                <p className="font-black text-black text-2xl tracking-tighter truncate uppercase italic leading-none mb-2">{activeUser.name}</p>
-                                <p className="text-[11px] text-gray-400 font-black uppercase tracking-[0.2em] leading-none">Ordinary Business OB</p>
+                                <p className="font-black text-black dark:text-white text-2xl tracking-tighter truncate uppercase italic leading-none mb-2">{activeUser.name}</p>
+                                <p className="text-[11px] text-gray-400 dark:text-gray-500 font-black uppercase tracking-[0.2em] leading-none">Ordinary Business OB</p>
                             </div>
                             <div className="relative shrink-0">
                                 <img 
                                     src={activeUser.profilePicUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${activeUser.name}`} 
                                     alt={activeUser.name} 
-                                    className="w-20 h-20 rounded-[28px] border-2 border-gray-50 shadow-lg object-cover" 
+                                    className="w-20 h-20 rounded-[28px] border-2 border-gray-50 dark:border-gray-700 shadow-lg object-cover" 
                                 />
-                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
+                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full shadow-sm"></div>
                             </div>
                         </button>
                     </div>
@@ -196,23 +196,23 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, setCurrentView, ac
                 </nav>
 
                 {/* Footer Section - Compact with Settings & Sign Out */}
-                <div className="px-4 pb-4 pt-3 border-t shrink-0 bg-white/50 backdrop-blur-sm flex items-center gap-3">
+                <div className="px-4 pb-4 pt-3 border-t dark:border-gray-800 shrink-0 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm flex items-center gap-3">
                     <button 
                         onClick={onLogout}
-                        className="flex-1 flex items-center gap-4 py-3 px-4 rounded-[24px] active:bg-red-50 transition-all text-left border border-transparent active:border-red-100"
+                        className="flex-1 flex items-center gap-4 py-3 px-4 rounded-[24px] active:bg-red-50 dark:active:bg-red-900/20 transition-all text-left border border-transparent active:border-red-100 dark:active:border-red-900/40"
                     >
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-red-100 text-red-500 shadow-sm">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-red-100 dark:bg-red-900/40 text-red-500 dark:text-red-400 shadow-sm">
                             <LogoutIcon className="w-5 h-5" />
                         </div>
                         <div className="flex-1">
-                            <p className="text-[15px] font-bold text-red-600 leading-tight">Sign Out</p>
-                            <p className="text-[10px] text-red-300 font-medium">End session</p>
+                            <p className="text-[15px] font-bold text-red-600 dark:text-red-400 leading-tight">Sign Out</p>
+                            <p className="text-[10px] text-red-300 dark:text-red-900/60 font-medium">End session</p>
                         </div>
                     </button>
                     
                     <button 
                         onClick={() => navigate(MainView.SETTINGS)}
-                        className="w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 text-gray-500 active:bg-gray-200 active:text-black transition-all shadow-sm border border-gray-50 shrink-0"
+                        className="w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 active:bg-gray-200 dark:active:bg-gray-700 active:text-black dark:active:text-white transition-all shadow-sm border border-gray-50 dark:border-gray-700 shrink-0"
                     >
                         <SettingsIcon className="w-6 h-6" />
                     </button>

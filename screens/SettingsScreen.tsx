@@ -20,6 +20,8 @@ import QrCodeIcon from '../components/icons/QrCodeIcon';
 import ShieldIcon from '../components/icons/ShieldIcon';
 import SparklesIcon from '../components/icons/SparklesIcon';
 import InformationCircleIcon from '../components/icons/InformationCircleIcon';
+import { isBiometricAvailable, registerBiometric } from '../utils/biometricUtils';
+import FingerprintIcon from '../components/icons/FingerprintIcon';
 import PrivacyPolicyModal from '../components/settings/PrivacyPolicyModal';
 import WhatsNextModal from '../components/settings/WhatsNextModal';
 import ImportantNotesModal from '../components/settings/ImportantNotesModal';
@@ -41,6 +43,8 @@ interface SettingsScreenProps {
     businessProfile: BusinessProfile;
     onUpdateBusinessProfile: (profile: BusinessProfile) => void;
     onPremiumFeatureClick?: () => void;
+    syncStatus?: string;
+    onForceSync?: () => void;
 }
 
 const SettingsRow: React.FC<{ icon: React.ReactNode; title: string; subtitle: string; children?: React.ReactNode, onClick?: () => void; isDestructive?: boolean }> = ({ icon, title, subtitle, children, onClick, isDestructive }) => (
@@ -118,7 +122,7 @@ const CheckCircleIcon: React.FC<{ className?: string }> = ({ className }) => (
 const daysOfWeek: (keyof BusinessSettings['workingDays'])[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
-    const { businessSettings, onUpdateBusinessSettings, activeUser, onUpdateUserSettings, setCurrentView, onClearAllData, businessProfile, onUpdateBusinessProfile, onPremiumFeatureClick } = props;
+    const { businessSettings, onUpdateBusinessSettings, activeUser, onUpdateUserSettings, setCurrentView, onClearAllData, businessProfile, onUpdateBusinessProfile, onPremiumFeatureClick, syncStatus, onForceSync } = props;
     const [isPinModalOpen, setPinModalOpen] = useState(false);
     const [isLogoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
@@ -126,7 +130,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
     const [hasFileSystemAccess, setHasFileSystemAccess] = useState(false);
     const [isQrCodeExpanded, setIsQrCodeExpanded] = useState(false);
     const [activeModal, setActiveModal] = useState<'privacy' | 'roadmap' | 'safety' | null>(null);
+    const [biometricSupported, setBiometricSupported] = useState(false);
     const qrInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        isBiometricAvailable().then(setBiometricSupported);
+    }, []);
 
     const formatCurrency = (value: number) => `₹${value.toLocaleString('en-IN')}`;
 
@@ -167,6 +176,27 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
             return;
         }
         onUpdateUserSettings({ enablePinLogin: value });
+    };
+
+    const handleBiometricToggle = async (value: boolean) => {
+        if (value) {
+            try {
+                const credentialId = await registerBiometric(activeUser.id, activeUser.name);
+                if (credentialId) {
+                    onUpdateUserSettings({ 
+                        enableBiometricLogin: true, 
+                        biometricCredentialId: credentialId 
+                    });
+                } else {
+                    alert("Biometric registration was cancelled or failed.");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("An error occurred during biometric registration.");
+            }
+        } else {
+            onUpdateUserSettings({ enableBiometricLogin: false });
+        }
     };
     
     const handleClearDataClick = () => {
@@ -316,6 +346,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
                         <SettingsRow icon={<PinIcon className="h-7 w-7" />} title="PIN Login" subtitle={activeUser.pinCode ? 'PIN is set' : 'Quick login with a 4-digit PIN'}>
                             <Toggle enabled={!!activeUser.enablePinLogin} onChange={handlePinToggle} />
                         </SettingsRow>
+                        {biometricSupported && (
+                            <SettingsRow icon={<FingerprintIcon className="h-7 w-7" />} title="Biometric Login" subtitle="Use fingerprint or face ID to unlock">
+                                <Toggle enabled={!!activeUser.enableBiometricLogin} onChange={handleBiometricToggle} />
+                            </SettingsRow>
+                        )}
                     </div>
                  </SettingsCard>
                 
@@ -436,6 +471,18 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
                         </SettingsRow>
                         <SettingsRow icon={<ExportIcon className="h-7 w-7" />} title="Export Data" subtitle="Download all data as a JSON file" onClick={props.onExportData} />
                         <SettingsRow icon={<ImportIcon className="h-7 w-7" />} title="Import Data" subtitle="Import from a backup file" onClick={props.onImportData} />
+                        <SettingsRow 
+                            icon={<CloudIcon className="h-7 w-7" />} 
+                            title="Force Sync Now" 
+                            subtitle={`Last status: ${syncStatus || 'Unknown'}`}
+                        >
+                            <button 
+                                onClick={onForceSync}
+                                className="font-semibold text-sm bg-green-100 text-green-600 px-4 py-2 rounded-lg hover:bg-green-200"
+                            >
+                                Sync Now
+                            </button>
+                        </SettingsRow>
                         <SettingsRow 
                             icon={<LedgerIcon className="h-7 w-7" />} 
                             title="Historical Data Entry" 

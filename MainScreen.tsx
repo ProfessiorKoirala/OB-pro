@@ -25,7 +25,7 @@ import StaffManagementScreen from './screens/StaffManagementScreen';
 import StaffDetailScreen from './screens/StaffDetailScreen';
 import ReportsScreen from './screens/ReportsScreen';
 import { saveDataToDrive, GAPI_TOKEN_EXPIRED_ERROR } from './googleApi';
-import { getInitialData, saveLocalDataForUser, SaveStatus, deleteLocalDataForUser } from './utils/dataUtils';
+import { getInitialData, saveLocalDataForUser, SaveStatus, deleteLocalDataForUser, mergeWithInitialData } from './utils/dataUtils';
 import DiscountManagementScreen from './screens/DiscountManagementScreen';
 import AddEditDiscountModal from './components/discounts/AddEditDiscountModal';
 import VendorsScreen from './screens/VendorsScreen';
@@ -81,7 +81,7 @@ const useDebouncedSave = (data: AppDataBackup, user: User, setSyncStatus: React.
                 }
             };
             saveData();
-        }, 1000);
+        }, 500);
         return () => clearTimeout(handler);
     }, [data, user, setSyncStatus, onLogout]);
 };
@@ -125,7 +125,8 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
         holidays = initialData.holidays || [], 
         trackers = initialData.trackers || [], 
         notes = initialData.notes || [], 
-        noteCategories = initialData.noteCategories || [] 
+        noteCategories = initialData.noteCategories || [],
+        rosters = initialData.rosters || []
     } = appData;
 
     const [currentView, setCurrentView] = useState<MainView>(MainView.DASHBOARD);
@@ -134,6 +135,31 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [syncStatus, setSyncStatus] = useState<SyncStatus>('Synced');
     useDebouncedSave(appData, activeUser, setSyncStatus, onLogout);
+
+    useEffect(() => {
+        const applyTheme = (theme: Theme) => {
+            const root = window.document.documentElement;
+            root.classList.remove('light', 'dark');
+
+            if (theme === 'system') {
+                const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                root.classList.add(systemTheme);
+            } else {
+                root.classList.add(theme);
+            }
+            // Save theme globally for initial screens
+            localStorage.setItem('ob-pro-global-theme', theme);
+        };
+
+        applyTheme(settings.theme);
+
+        if (settings.theme === 'system') {
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            const handleChange = () => applyTheme('system');
+            mediaQuery.addEventListener('change', handleChange);
+            return () => mediaQuery.removeEventListener('change', handleChange);
+        }
+    }, [settings.theme]);
 
     const updateState = useCallback((key: keyof AppDataBackup, value: any) => {
         setAppData(prev => ({ ...prev, [key]: value }));
@@ -173,6 +199,19 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
         if (saved) { try { const parsed = JSON.parse(saved); if (Array.isArray(parsed)) return new Map(parsed); } catch (e) {} }
         return new Map();
     });
+
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            // Force save to localStorage on exit
+            if (appData) {
+                localStorage.setItem(`ob-pro-data-${activeUser.id}`, JSON.stringify(appData));
+                // Also save pending orders
+                localStorage.setItem(`${PENDING_ORDERS_KEY_PREFIX}${activeUser.id}`, JSON.stringify(Array.from(pendingOrders.entries())));
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [appData, activeUser.id, pendingOrders]);
 
     useEffect(() => {
         const key = `${PENDING_ORDERS_KEY_PREFIX}${activeUser.id}`;
@@ -303,10 +342,85 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
         setAppData(prev => ({ ...prev, deletedItems: prev.deletedItems.filter(i => i.id !== itemId) }));
     }, []);
 
+    const handleExportData = useCallback(() => {
+        try {
+            const dataStr = JSON.stringify(appData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `empire-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            console.error("Export failed", e);
+            alert("Failed to export data.");
+        }
+    }, [appData]);
+
+    const handleImportData = useCallback(() => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = async (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const content = event.target?.result as string;
+                    const parsed = JSON.parse(content);
+                    // Basic validation
+                    if (parsed && typeof parsed === 'object') {
+                        const merged = mergeWithInitialData(parsed);
+                        setAppData(merged);
+                        alert("Data imported successfully!");
+                    } else {
+                        alert("Invalid backup file format.");
+                    }
+                } catch (err) {
+                    console.error("Import failed", err);
+                    alert("Failed to parse the backup file.");
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }, []);
+
+    const handleClearAllData = useCallback(() => {
+        const initial = getInitialData();
+        setAppData(initial);
+        // Also clear pending orders
+        setPendingOrders(new Map());
+        localStorage.removeItem(`${PENDING_ORDERS_KEY_PREFIX}${activeUser.id}`);
+    }, [activeUser.id]);
+
+    const handleForceSync = useCallback(async () => {
+        setSyncStatus('Syncing...');
+        try {
+            const savePromises: Promise<any>[] = [];
+            if (appData.settings.saveDataLocally || activeUser.accountType === 'local') {
+                savePromises.push(saveLocalDataForUser(activeUser.id, appData));
+            }
+            if (activeUser.accountType === 'google' && activeUser.accessToken) {
+                savePromises.push(saveDataToDrive(activeUser.accessToken, appData));
+            }
+            await Promise.all(savePromises);
+            setSyncStatus('Synced');
+            alert("Data synced successfully!");
+        } catch (error) {
+            setSyncStatus('Sync Failed');
+            alert("Sync failed. Please check your connection.");
+        }
+    }, [appData, activeUser]);
+
     const renderSecondaryView = () => {
         switch(currentView) {
             case MainView.ACCOUNTING: return <AccountingScreen orders={orders} expenses={expenses} payments={payments} creditors={creditors} products={products} businessProfile={businessProfile} onHome={goToDashboard} />;
-            case MainView.SETTINGS: return <SettingsScreen isVatEnabled={settings.isVatEnabled} onVatToggle={() => updateSettings({isVatEnabled: !settings.isVatEnabled})} businessSettings={settings} onUpdateBusinessSettings={updateSettings} onExportData={()=>{}} onImportData={()=>{}} onLogout={onLogout} activeUser={activeUser} onUpdateUserSettings={(u)=>onUpdateUser({...activeUser,...u})} setCurrentView={setCurrentView} onClearAllData={()=>{}} businessProfile={businessProfile} onUpdateBusinessProfile={(p)=>updateState('businessProfile', p)} />;
+            case MainView.SETTINGS: return <SettingsScreen isVatEnabled={settings.isVatEnabled} onVatToggle={() => updateSettings({isVatEnabled: !settings.isVatEnabled})} businessSettings={settings} onUpdateBusinessSettings={updateSettings} onExportData={handleExportData} onImportData={handleImportData} onLogout={onLogout} activeUser={activeUser} onUpdateUserSettings={(u)=>onUpdateUser({...activeUser,...u})} setCurrentView={setCurrentView} onClearAllData={handleClearAllData} businessProfile={businessProfile} onUpdateBusinessProfile={(p)=>updateState('businessProfile', p)} syncStatus={syncStatus} onForceSync={handleForceSync} />;
             case MainView.PROFILE: return <ProfileScreen appData={appData} profileData={businessProfile} onBack={() => setCurrentView(MainView.DASHBOARD)} onLogout={onLogout} onEdit={() => setCurrentView(MainView.EDIT_PROFILE)} />;
             case MainView.EDIT_PROFILE: return <EditProfileScreen profileData={businessProfile} activeUser={activeUser} onCancel={() => setCurrentView(MainView.PROFILE)} onSave={(u, p) => { onUpdateUser(u); updateState('businessProfile', p); setCurrentView(MainView.PROFILE); }} />;
             case MainView.KOT_LIST: return <KotListScreen kots={kots || []} onBack={() => setCurrentView(MainView.DASHBOARD)} businessProfile={businessProfile} onHome={goToDashboard} />;
@@ -316,12 +430,30 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
             case MainView.RECYCLE_BIN: return <RecycleBinScreen deletedItems={deletedItems} onRestore={handleRestore} onPermanentlyDelete={handlePermanentlyDelete} onHome={goToDashboard} />;
             case MainView.CALCULATOR: return <CalculatorScreen setCurrentView={setCurrentView} onHome={goToDashboard} />;
             case MainView.CALENDAR: return <CalendarScreen orders={orders} expenses={expenses} payments={payments} reminders={reminders} creditors={creditors} onAddReminder={()=>{}} settings={settings} holidays={holidays} onAddHoliday={()=>{}} onDeleteReminder={()=>{}} onDeleteHoliday={()=>{}} onHome={goToDashboard} />;
-            case MainView.REPORTS: return <ReportsScreen orders={orders} expenses={expenses} products={products} payments={payments} onHome={goToDashboard} />;
+            case MainView.REPORTS: return <ReportsScreen orders={orders} expenses={expenses} products={products} payments={payments} businessProfile={businessProfile} onHome={goToDashboard} />;
             case MainView.STAFF: return <StaffManagementScreen staff={staff} onAddClick={() => setModal('addStaff')} onViewStaff={(id) => { setDetailViewId(id); setCurrentView(MainView.STAFF_DETAIL); }} businessProfile={businessProfile} onHome={goToDashboard} />;
             case MainView.STAFF_DETAIL: {
                 const member = staff.find(s => s.id === detailViewId);
                 if (!member) return null;
-                return <StaffDetailScreen staffMember={member} attendance={attendance} payrolls={payrolls} onBack={() => setCurrentView(MainView.STAFF)} onEditStaff={(s)=>{setStaffToEdit(s); setModal('addStaff');}} onDeleteStaff={(id)=>updateState('staff', staff.filter(s=>s.id!==id))} onUpdateStatus={(id, stat)=>updateState('staff', staff.map(s=>s.id===id?{...s,status:stat}:s))} onClockInOut={(id, type)=>updateState('attendance', [...attendance, {id:`att-${Date.now()}`, staffId:id, date:new Date().toISOString().split('T')[0], clockIn:type==='in'?Date.now():null, clockOut:type==='out'?Date.now():null, status:'Present'}])} onMarkLeave={(id, date, type, reason)=>updateState('attendance', [...attendance, {id:`att-${Date.now()}`, staffId:id, date, status:type, reason, clockIn:null, clockOut:null}])} onDeleteAttendance={(id)=>updateState('attendance', attendance.filter(a=>a.id!==id))} onPaySalary={(id, month, amount, bonus, taxDeduction)=>updateState('payrolls', [...payrolls, {id:`pay-${Date.now()}`, staffId:id, month, amount, bonus, taxDeduction, paidOn:Date.now()}])} businessProfile={businessProfile} holidays={holidays} settings={settings} />;
+                return <StaffDetailScreen 
+                    staffMember={member} 
+                    attendance={attendance} 
+                    payrolls={payrolls} 
+                    rosters={rosters || []}
+                    onBack={() => setCurrentView(MainView.STAFF)} 
+                    onEditStaff={(s)=>{setStaffToEdit(s); setModal('addStaff');}} 
+                    onDeleteStaff={(id)=>updateState('staff', staff.filter(s=>s.id!==id))} 
+                    onUpdateStatus={(id, stat)=>updateState('staff', staff.map(s=>s.id===id?{...s,status:stat}:s))} 
+                    onClockInOut={(id, type)=>updateState('attendance', [...attendance, {id:`att-${Date.now()}`, staffId:id, date:new Date().toISOString().split('T')[0], clockIn:type==='in'?Date.now():null, clockOut:type==='out'?Date.now():null, status:'Present'}])} 
+                    onMarkLeave={(id, date, type, reason)=>updateState('attendance', [...attendance, {id:`att-${Date.now()}`, staffId:id, date, status:type, reason, clockIn:null, clockOut:null}])} 
+                    onDeleteAttendance={(id)=>updateState('attendance', attendance.filter(a=>a.id!==id))} 
+                    onPaySalary={(payroll)=>updateState('payrolls', [...payrolls, { ...payroll, id: `pay-${Date.now()}` }])} 
+                    onAddRoster={(roster)=>updateState('rosters', [...(rosters || []), { ...roster, id: `ros-${Date.now()}` }])}
+                    onDeleteRoster={(id)=>updateState('rosters', (rosters || []).filter(r => r.id !== id))}
+                    businessProfile={businessProfile} 
+                    holidays={holidays} 
+                    settings={settings} 
+                />;
             }
             case MainView.VENDORS: return <VendorsScreen vendors={vendors} onAddVendorClick={() => setModal('addVendor')} onAddPurchaseClick={() => setModal('addPurchase')} onViewVendor={(id) => { setDetailViewId(id); setCurrentView(MainView.VENDOR_DETAIL); }} businessProfile={businessProfile} onHome={goToDashboard} />;
             case MainView.VENDOR_DETAIL: {
@@ -345,7 +477,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
                 return <CreditorDetailScreen creditor={creditor} orders={orders} payments={payments} onBack={() => setCurrentView(MainView.CREDITORS)} onCollectPayment={(id, data) => updateState('payments', [...payments, { ...data, id: `p-${Date.now()}`, creditorId: id, date: Date.now(), type: 'Credit Payment' }])} onReturnAdvance={(id, data) => updateState('payments', [...payments, { ...data, id: `p-${Date.now()}`, creditorId: id, date: Date.now(), type: 'Advance Return' }])} isVatEnabled={settings.isVatEnabled} businessProfile={businessProfile} />;
             }
             case MainView.BILLS: return <BillsScreen orders={orders} expenses={expenses} isVatEnabled={settings.isVatEnabled} businessProfile={businessProfile} onDeleteOrder={handleDeleteOrder} onDeleteExpense={handleDeleteExpense} onHome={goToDashboard} activeUser={activeUser} />;
-            case MainView.STOCK_REPORT: return <StockReportScreen orders={orders} products={products} purchases={purchases} onBack={() => setCurrentView(MainView.DASHBOARD)} onHome={goToDashboard} onUpdateProducts={(newProds) => updateState('products', newProds)} />;
+            case MainView.STOCK_REPORT: return <StockReportScreen orders={orders} products={products} purchases={purchases} businessProfile={businessProfile} onBack={() => setCurrentView(MainView.DASHBOARD)} onHome={goToDashboard} onUpdateProducts={(newProds) => updateState('products', newProds)} />;
             default: return null;
         }
     };

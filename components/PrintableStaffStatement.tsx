@@ -71,12 +71,30 @@ const PrintableStaffStatement: React.FC<PrintableStaffStatementProps> = ({ staff
         const absentDays = calendarData.filter(d => d.status === 'Absent').length;
         const holidaysInMonth = calendarData.filter(d => d.status === 'Holiday' || d.status === 'Weekly Off').length;
 
-        const perDaySalary = (staff.salary || 0) / (workingDaysInMonth || 1);
-        const unpaidLeaveDays = leaveDays + absentDays;
-        const deductions = (unpaidLeaveDays * perDaySalary) + (halfDayLeaves * (perDaySalary / 2));
+        let basePay = 0;
+        let overtimePay = 0;
+        let deductions = 0;
+
+        if (staff.payType === 'Monthly') {
+            const perDaySalary = (staff.salary || 0) / (workingDaysInMonth || 1);
+            const unpaidLeaveDays = leaveDays + absentDays;
+            deductions = (unpaidLeaveDays * perDaySalary) + (halfDayLeaves * (perDaySalary / 2));
+            basePay = staff.salary || 0;
+        } else {
+            // Hourly Pay
+            basePay = totalHoursWorked * (staff.hourlyRate || 0);
+            // Overtime: hours > 8 in a single day (simplified for print)
+            overtimePay = attendance.reduce((acc, a) => {
+                if (a.clockIn && a.clockOut) {
+                    const hours = (a.clockOut - a.clockIn) / 3600000;
+                    if (hours > 8) return acc + (hours - 8) * (staff.overtimeRate || 0);
+                }
+                return acc;
+            }, 0);
+        }
         
         const stats = {
-            workingDaysInMonth, holidaysInMonth, presentDays, leaveDays, halfDayLeaves, sickLeaves, absentDays, totalHoursWorked, deductions
+            workingDaysInMonth, holidaysInMonth, presentDays, leaveDays, halfDayLeaves, sickLeaves, absentDays, totalHoursWorked, deductions, basePay, overtimePay
         };
 
         return { calendarData, stats };
@@ -103,7 +121,7 @@ const PrintableStaffStatement: React.FC<PrintableStaffStatementProps> = ({ staff
         .paid-stamp { color: #2ECC71; border: 3px solid #2ECC71; padding: 5px 10px; font-size: 1.5em; font-weight: bold; transform: rotate(-15deg); display: inline-block; margin-top: 10px; }
     `;
 
-    const netSalaryPayable = (staff.salary || 0) + (payroll?.bonus || 0) - stats.deductions - (payroll?.taxDeduction || 0);
+    const netSalaryPayable = stats.basePay + stats.overtimePay + (payroll?.bonus || 0) - stats.deductions - (payroll?.taxDeduction || 0) - (payroll?.otherDeductions || 0);
 
     return (
         <>
@@ -120,7 +138,7 @@ const PrintableStaffStatement: React.FC<PrintableStaffStatementProps> = ({ staff
                 <div className="details-grid">
                     <div><strong>Staff Name:</strong> <span>{staff.name}</span></div>
                     <div><strong>Role:</strong> <span>{staff.role}</span></div>
-                    <div><strong>Joining Date:</strong> <span>{staff.joiningDate ? new Date(staff.joiningDate).toLocaleDateString() : 'N/A'}</span></div>
+                    <div><strong>Pay Type:</strong> <span>{staff.payType}</span></div>
                     <div><strong>Date Issued:</strong> <span>{new Date().toLocaleDateString()}</span></div>
                     <div><strong>Bank A/C:</strong> <span>{staff.bankAccountNumber || 'N/A'}</span></div>
                     <div><strong>PAN:</strong> <span>{staff.pan || 'N/A'}</span></div>
@@ -129,15 +147,17 @@ const PrintableStaffStatement: React.FC<PrintableStaffStatementProps> = ({ staff
                 <div className="summary-grid">
                     <div className="summary-section">
                         <h3>Earnings</h3>
-                        <div className="summary-row"><span>Basic Salary:</span> <span>{formatCurrency(staff.salary || 0)}</span></div>
+                        <div className="summary-row"><span>Basic Salary:</span> <span>{formatCurrency(stats.basePay)}</span></div>
+                        {stats.overtimePay > 0 && <div className="summary-row"><span>Overtime Pay:</span> <span>{formatCurrency(stats.overtimePay)}</span></div>}
                         <div className="summary-row"><span>Bonus:</span> <span>{formatCurrency(payroll?.bonus || 0)}</span></div>
-                        <div className="summary-row total" style={{borderTop: '1px solid #ccc', paddingTop: '8px'}}><span>Total Earnings:</span> <span>{formatCurrency((staff.salary || 0) + (payroll?.bonus || 0))}</span></div>
+                        <div className="summary-row total" style={{borderTop: '1px solid #ccc', paddingTop: '8px'}}><span>Total Earnings:</span> <span>{formatCurrency(stats.basePay + stats.overtimePay + (payroll?.bonus || 0))}</span></div>
                     </div>
                      <div className="summary-section">
                         <h3>Deductions</h3>
                         <div className="summary-row"><span>Unpaid Leave:</span> <span>- {formatCurrency(stats.deductions)}</span></div>
                         <div className="summary-row"><span>Tax Deduction (TDS):</span> <span>- {formatCurrency(payroll?.taxDeduction || 0)}</span></div>
-                        <div className="summary-row total" style={{borderTop: '1px solid #ccc', paddingTop: '8px'}}><span>Total Deductions:</span> <span>- {formatCurrency(stats.deductions + (payroll?.taxDeduction || 0))}</span></div>
+                        {payroll?.otherDeductions && <div className="summary-row"><span>Other Deductions:</span> <span>- {formatCurrency(payroll.otherDeductions)}</span></div>}
+                        <div className="summary-row total" style={{borderTop: '1px solid #ccc', paddingTop: '8px'}}><span>Total Deductions:</span> <span>- {formatCurrency(stats.deductions + (payroll?.taxDeduction || 0) + (payroll?.otherDeductions || 0))}</span></div>
                     </div>
                 </div>
 

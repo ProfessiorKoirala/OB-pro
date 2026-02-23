@@ -230,7 +230,17 @@ const OrderEditor: React.FC<OrderEditorProps> = (props) => {
                     </h1>
                 </div>
                 <div className="flex items-center gap-2 relative">
-                    <button onClick={handlePrintBill} className="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 active:scale-90 transition-all">
+                    {isKotEnabled && (
+                        <button 
+                            onClick={() => onPrintKot?.(order)} 
+                            className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 active:scale-90 transition-all flex items-center gap-1"
+                            title="Print KOT"
+                        >
+                            <PrinterIcon className="w-5 h-5" />
+                            <span className="text-[10px] font-black uppercase">KOT</span>
+                        </button>
+                    )}
+                    <button onClick={handlePrintBill} className="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 active:scale-90 transition-all" title="Print Bill">
                         <PrinterIcon className="w-5 h-5" />
                     </button>
                     <button onClick={onSave} className="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all">Save</button>

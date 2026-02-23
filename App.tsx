@@ -14,10 +14,11 @@ import PasswordLoginScreen from './screens/PasswordLoginScreen';
 import PremiumFeatureScreen from './screens/PremiumFeatureScreen';
 import AuthMethodChooserScreen from './screens/AuthMethodChooserScreen';
 import GreetingScreen from './screens/GreetingScreen';
+import { authenticateBiometric } from './utils/biometricUtils';
 
 type AppState = 'LOADING' | 'ONBOARDING' | 'PERMISSION' | 'AUTH' | 'AUTHENTICATING_USER' | 'DATA_LOADING' | 'GREETING' | 'LOGGED_IN';
 type AuthState = 'CHOOSE_ACCOUNT' | 'LOGIN_FORM';
-type AuthMethod = 'PIN' | 'PASSWORD' | null;
+type AuthMethod = 'PIN' | 'PASSWORD' | 'BIOMETRIC' | null;
 
 const AppContent: React.FC = () => {
     const [appState, setAppState] = useState<AppState>('LOADING');
@@ -30,6 +31,34 @@ const AppContent: React.FC = () => {
     const [showPremiumScreen, setShowPremiumScreen] = useState(false);
     const [selectedAuthMethod, setSelectedAuthMethod] = useState<AuthMethod>(null);
     const [verificationResult, setVerificationResult] = useState<'SUCCESS' | 'FAILURE' | null>(null);
+
+    useEffect(() => {
+        const root = window.document.documentElement;
+        const applyInitialTheme = () => {
+            const savedTheme = localStorage.getItem('ob-pro-global-theme');
+            if (activeUser) return; // MainScreen will handle it
+
+            root.classList.remove('light', 'dark');
+            if (savedTheme === 'dark') {
+                root.classList.add('dark');
+            } else if (savedTheme === 'system') {
+                const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                root.classList.add(systemTheme);
+            } else {
+                // Default to light for initial screens
+                root.classList.add('light');
+            }
+        };
+        
+        applyInitialTheme();
+        
+        if (!activeUser && localStorage.getItem('ob-pro-global-theme') === 'system') {
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            const handleChange = () => applyInitialTheme();
+            mediaQuery.addEventListener('change', handleChange);
+            return () => mediaQuery.removeEventListener('change', handleChange);
+        }
+    }, [activeUser]);
 
     const handleLogout = useCallback(() => {
         setActiveUser(null);
@@ -142,15 +171,31 @@ const AppContent: React.FC = () => {
         setAppState('AUTHENTICATING_USER');
     }, []);
 
+    const handleBiometricLogin = useCallback(async (user: User) => {
+        if (user.biometricCredentialId) {
+            const success = await authenticateBiometric(user.biometricCredentialId);
+            if (success) {
+                handleAuthAttempt(true, user);
+            } else {
+                alert("Biometric authentication failed or was cancelled.");
+                setSelectedAuthMethod(null);
+            }
+        }
+    }, [handleAuthAttempt]);
+
     useEffect(() => {
         if (appState === 'AUTHENTICATING_USER' && authenticatingUser) {
             const isGoogleAccount = authenticatingUser.accountType === 'google';
             const hasPinAuth = authenticatingUser.enablePinLogin && authenticatingUser.pinCode;
-            if (isGoogleAccount && !hasPinAuth) {
+            const hasBiometricAuth = authenticatingUser.enableBiometricLogin && authenticatingUser.biometricCredentialId;
+            
+            if (isGoogleAccount && !hasPinAuth && !hasBiometricAuth) {
                 handleAuthAttempt(true, authenticatingUser);
+            } else if (selectedAuthMethod === 'BIOMETRIC') {
+                handleBiometricLogin(authenticatingUser);
             }
         }
-    }, [appState, authenticatingUser, handleAuthAttempt]);
+    }, [appState, authenticatingUser, handleAuthAttempt, selectedAuthMethod, handleBiometricLogin]);
 
     const handleOnboardingComplete = () => {
         localStorage.setItem('ob-pro-onboarded', 'true');
@@ -262,8 +307,11 @@ const AppContent: React.FC = () => {
                     : <LoginScreen onLocalLogin={handleLocalLoginAttempt} onLocalSignUp={handleLocalSignUp} onGoogleSignInClick={() => setShowPremiumScreen(true)} onLoginComplete={()=>{}} onSignUpComplete={()=>{}} />;
             case 'AUTHENTICATING_USER':
                 if (!authenticatingUser) return <SplashScreen />;
-                if (authenticatingUser.pinCode && !selectedAuthMethod) {
+                if ((authenticatingUser.pinCode || authenticatingUser.enableBiometricLogin) && !selectedAuthMethod) {
                     return <AuthMethodChooserScreen user={authenticatingUser} onSelect={setSelectedAuthMethod} onBack={() => setAppState('AUTH')} />;
+                }
+                if (selectedAuthMethod === 'BIOMETRIC') {
+                    return <SplashScreen message="Authenticating Biometric..." onComplete={() => {}} />;
                 }
                 return selectedAuthMethod === 'PIN' || (authenticatingUser.pinCode && !selectedAuthMethod)
                     ? <PinLoginScreen user={authenticatingUser} correctPin={authenticatingUser.pinCode!} onSuccess={() => handleAuthAttempt(true, authenticatingUser)} onBack={() => setAppState('AUTH')} />

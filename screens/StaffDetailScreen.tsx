@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Staff, Attendance, Payroll, BusinessProfile, Holiday, BusinessSettings } from '../types';
+import { Staff, Attendance, Payroll, BusinessProfile, Holiday, BusinessSettings, Roster } from '../types';
 import ConfirmationModal from '../components/ConfirmationModal';
 import PaySalaryModal from '../components/staff/PaySalaryModal';
 import { printStaffStatement, printJoiningLetter } from '../utils/printUtils';
@@ -54,7 +54,10 @@ interface StaffDetailScreenProps {
   onClockInOut: (staffId: string, type: 'in' | 'out') => void;
   onMarkLeave: (staffId: string, date: string, type: Attendance['status'], reason?: string) => void;
   onDeleteAttendance: (attendanceId: string) => void;
-  onPaySalary: (staffId: string, month: string, amount: number, bonus: number, taxDeduction: number) => void;
+  onPaySalary: (payroll: Omit<Payroll, 'id'>) => void;
+  rosters: Roster[];
+  onAddRoster: (roster: Omit<Roster, 'id'>) => void;
+  onDeleteRoster: (rosterId: string) => void;
   businessProfile: BusinessProfile;
   holidays: Holiday[];
   settings: BusinessSettings;
@@ -62,7 +65,7 @@ interface StaffDetailScreenProps {
 }
 
 const StaffDetailScreen: React.FC<StaffDetailScreenProps> = (props) => {
-    const { staffMember, attendance, payrolls, onBack, onEditStaff, onDeleteStaff, onUpdateStatus, onClockInOut, onMarkLeave, onPaySalary, businessProfile, holidays, settings, isDesktop, onDeleteAttendance } = props;
+    const { staffMember, attendance, payrolls, onBack, onEditStaff, onDeleteStaff, onUpdateStatus, onClockInOut, onMarkLeave, onPaySalary, rosters, onAddRoster, onDeleteRoster, businessProfile, holidays, settings, isDesktop, onDeleteAttendance } = props;
     
     const [isDeleting, setIsDeleting] = useState(false);
     const [statusChangeConfirm, setStatusChangeConfirm] = useState<'mark-former' | 're-activate' | null>(null);
@@ -70,7 +73,8 @@ const StaffDetailScreen: React.FC<StaffDetailScreenProps> = (props) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [leaveModal, setLeaveModal] = useState<{ open: boolean; date: string }>({ open: false, date: '' });
     const [attendanceToDelete, setAttendanceToDelete] = useState<string | null>(null);
-
+    const [isAddingRoster, setIsAddingRoster] = useState(false);
+    const [rosterForm, setRosterForm] = useState({ date: new Date().toISOString().split('T')[0], shiftStart: '09:00', shiftEnd: '18:00', notes: '' });
 
     const formatCurrency = (value: number) => `₹${value.toLocaleString('en-IN')}`;
 
@@ -86,8 +90,8 @@ const StaffDetailScreen: React.FC<StaffDetailScreenProps> = (props) => {
         }
     };
 
-    const handlePaySalaryConfirm = (month: string, amount: number, bonus: number, taxDeduction: number) => {
-        onPaySalary(staffMember.id, month, amount, bonus, taxDeduction);
+    const handlePaySalaryConfirm = (payrollData: Omit<Payroll, 'id'>) => {
+        onPaySalary(payrollData);
         setIsPayingSalary(false);
     };
 
@@ -165,15 +169,44 @@ const StaffDetailScreen: React.FC<StaffDetailScreenProps> = (props) => {
         const sickLeaves = days.filter(d => d?.status === 'Sick Leave').length;
         const absentDays = days.filter(d => d?.status === 'Absent').length;
         
-        const perDaySalary = (staffMember.salary || 0) / (workingDaysInMonth || 1);
-        const unpaidLeaveDays = leaveDays + absentDays;
-        const deductions = (unpaidLeaveDays * perDaySalary) + (halfDayLeaves * (perDaySalary / 2));
-        
         const monthString = `${currentMonth.getFullYear()}-${(currentMonth.getMonth() + 1).toString().padStart(2, '0')}`;
         const payrollForMonth = payrolls.find(p => p.staffId === staffMember.id && p.month === monthString);
         
-        const payableSalary = Math.max(0, (staffMember.salary || 0) - deductions);
-        const netSalaryPayable = payableSalary + (payrollForMonth?.bonus || 0) - (payrollForMonth?.taxDeduction || 0);
+        let basePay = 0;
+        let overtimePay = 0;
+        let deductions = 0;
+
+        if (staffMember.payType === 'Monthly') {
+            const perDaySalary = (staffMember.salary || 0) / (workingDaysInMonth || 1);
+            const unpaidLeaveDays = leaveDays + absentDays;
+            deductions = (unpaidLeaveDays * perDaySalary) + (halfDayLeaves * (perDaySalary / 2));
+            basePay = staffMember.salary || 0;
+        } else {
+            // Hourly Pay
+            const totalNormalHours = days.reduce((acc, d) => {
+                if (d?.record?.clockIn && d.record.clockOut) {
+                    const durationMs = d.record.clockOut - d.record.clockIn;
+                    return acc + (durationMs / 3600000);
+                }
+                return acc;
+            }, 0);
+            basePay = totalNormalHours * (staffMember.hourlyRate || 0);
+            
+            // Overtime: hours > 8 in a single day
+            overtimePay = days.reduce((acc, d) => {
+                if (d?.record?.clockIn && d.record.clockOut) {
+                    const durationMs = d.record.clockOut - d.record.clockIn;
+                    const hours = durationMs / 3600000;
+                    if (hours > 8) {
+                        return acc + (hours - 8) * (staffMember.overtimeRate || 0);
+                    }
+                }
+                return acc;
+            }, 0);
+        }
+
+        const payableSalary = Math.max(0, basePay - deductions + overtimePay);
+        const netSalaryPayable = payableSalary + (payrollForMonth?.bonus || 0) - (payrollForMonth?.taxDeduction || 0) - (payrollForMonth?.otherDeductions || 0);
 
         return { 
             calendarData: days,
@@ -185,13 +218,15 @@ const StaffDetailScreen: React.FC<StaffDetailScreenProps> = (props) => {
                 halfDayLeaves,
                 sickLeaves,
                 absentDays,
+                basePay,
+                overtimePay,
                 deductions,
                 payableSalary,
                 netSalaryPayable
             },
             payrollForMonth
         };
-    }, [currentMonth, attendance, staffMember.id, staffMember.joiningDate, staffMember.salary, holidays, settings.workingDays, payrolls]);
+    }, [currentMonth, attendance, staffMember, holidays, settings.workingDays, payrolls]);
 
     const handleSharePayslip = () => {
         const data = {
@@ -315,7 +350,20 @@ const StaffDetailScreen: React.FC<StaffDetailScreenProps> = (props) => {
                         )}
                     </div>
                     <div className="mt-4 border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                        <div><p className="text-gray-500">Salary</p><p className="font-semibold">{staffMember.salary ? formatCurrency(staffMember.salary) : 'N/A'}</p></div>
+                        <div>
+                            <p className="text-gray-500">Pay Type</p>
+                            <p className="font-semibold">{staffMember.payType}</p>
+                        </div>
+                        <div>
+                            <p className="text-gray-500">{staffMember.payType === 'Monthly' ? 'Monthly Salary' : 'Hourly Rate'}</p>
+                            <p className="font-semibold">{staffMember.payType === 'Monthly' ? formatCurrency(staffMember.salary || 0) : `${formatCurrency(staffMember.hourlyRate || 0)}/hr`}</p>
+                        </div>
+                        {staffMember.payType === 'Hourly' && (
+                            <div>
+                                <p className="text-gray-500">Overtime Rate</p>
+                                <p className="font-semibold">{formatCurrency(staffMember.overtimeRate || 0)}/hr</p>
+                            </div>
+                        )}
                         <div><p className="text-gray-500">Joining Date</p><p className="font-semibold">{staffMember.joiningDate ? new Date(staffMember.joiningDate + 'T00:00:00').toLocaleDateString() : 'N/A'}</p></div>
                         <div><p className="text-gray-500">Bank Account</p><p className="font-semibold">{staffMember.bankAccountNumber || 'N/A'}</p></div>
                         <div><p className="text-gray-500">PAN Number</p><p className="font-semibold">{staffMember.pan || 'N/A'}</p></div>
@@ -357,11 +405,62 @@ const StaffDetailScreen: React.FC<StaffDetailScreenProps> = (props) => {
                                 <div className="bg-blue-50 p-2 rounded-lg text-center"><p className="font-bold text-lg text-blue-700">{monthlyStats.holidaysInMonth}</p><p className="text-xs text-blue-700">Holidays &amp; Offs</p></div>
                             </div>
                             <div className="mt-4 pt-4 border-t space-y-2">
-                                <div className="flex justify-between text-sm"><span className="text-gray-600">Base Salary</span><span className="font-semibold">{formatCurrency(staffMember.salary || 0)}</span></div>
+                                <div className="flex justify-between text-sm"><span className="text-gray-600">Base Pay ({staffMember.payType})</span><span className="font-semibold">{formatCurrency(monthlyStats.basePay)}</span></div>
+                                {monthlyStats.overtimePay > 0 && <div className="flex justify-between text-sm"><span className="text-green-600">Overtime Pay</span><span className="font-semibold text-green-600">+ {formatCurrency(monthlyStats.overtimePay)}</span></div>}
                                 {payrollForMonth?.bonus && <div className="flex justify-between text-sm"><span className="text-green-600">Bonus</span><span className="font-semibold text-green-600">+ {formatCurrency(payrollForMonth.bonus)}</span></div>}
-                                <div className="flex justify-between text-sm"><span className="text-red-600">Deductions (Unpaid Leave)</span><span className="font-semibold text-red-600">- {formatCurrency(monthlyStats.deductions)}</span></div>
+                                {monthlyStats.deductions > 0 && <div className="flex justify-between text-sm"><span className="text-red-600">Deductions (Unpaid Leave)</span><span className="font-semibold text-red-600">- {formatCurrency(monthlyStats.deductions)}</span></div>}
                                 {payrollForMonth?.taxDeduction && <div className="flex justify-between text-sm"><span className="text-red-600">Tax Deduction</span><span className="font-semibold text-red-600">- {formatCurrency(payrollForMonth.taxDeduction)}</span></div>}
+                                {payrollForMonth?.otherDeductions && <div className="flex justify-between text-sm"><span className="text-red-600">Other Deductions</span><span className="font-semibold text-red-600">- {formatCurrency(payrollForMonth.otherDeductions)}</span></div>}
                                 <div className="flex justify-between font-bold text-lg mt-2"><span className="text-primary">Net Payable</span><span className="text-primary">{formatCurrency(monthlyStats.netSalaryPayable)}</span></div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-4 rounded-lg shadow-sm">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-bold text-lg text-text-primary">Staff Roster</h3>
+                                <button onClick={() => setIsAddingRoster(true)} className="text-primary font-bold text-sm">+ Add Shift</button>
+                            </div>
+                            {isAddingRoster && (
+                                <div className="mb-4 p-4 bg-gray-50 rounded-lg space-y-3">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase">Date</label>
+                                            <input type="date" value={rosterForm.date} onChange={e => setRosterForm({...rosterForm, date: e.target.value})} className="w-full p-2 border rounded-md text-sm" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase">Notes</label>
+                                            <input type="text" value={rosterForm.notes} onChange={e => setRosterForm({...rosterForm, notes: e.target.value})} placeholder="e.g. Morning Shift" className="w-full p-2 border rounded-md text-sm" />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase">Start Time</label>
+                                            <input type="time" value={rosterForm.shiftStart} onChange={e => setRosterForm({...rosterForm, shiftStart: e.target.value})} className="w-full p-2 border rounded-md text-sm" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase">End Time</label>
+                                            <input type="time" value={rosterForm.shiftEnd} onChange={e => setRosterForm({...rosterForm, shiftEnd: e.target.value})} className="w-full p-2 border rounded-md text-sm" />
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end space-x-2">
+                                        <button onClick={() => setIsAddingRoster(false)} className="px-3 py-1 text-gray-600 text-sm">Cancel</button>
+                                        <button onClick={() => { onAddRoster({...rosterForm, staffId: staffMember.id}); setIsAddingRoster(false); }} className="px-3 py-1 bg-primary text-white rounded-md text-sm font-bold">Save Shift</button>
+                                    </div>
+                                </div>
+                            )}
+                            <div className="space-y-2">
+                                {rosters.filter(r => r.staffId === staffMember.id && r.date >= todayString).sort((a,b) => a.date.localeCompare(b.date)).slice(0, 5).map(r => (
+                                    <div key={r.id} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg border border-gray-100">
+                                        <div>
+                                            <p className="font-bold text-sm">{new Date(r.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                                            <p className="text-xs text-gray-500">{r.shiftStart} - {r.shiftEnd} {r.notes && `• ${r.notes}`}</p>
+                                        </div>
+                                        <button onClick={() => onDeleteRoster(r.id)} className="text-red-500 p-1 hover:bg-red-50 rounded-md"><TrashIcon className="h-4 w-4"/></button>
+                                    </div>
+                                ))}
+                                {rosters.filter(r => r.staffId === staffMember.id && r.date >= todayString).length === 0 && (
+                                    <p className="text-xs text-center text-gray-400 py-2">No upcoming shifts scheduled.</p>
+                                )}
                             </div>
                         </div>
 
@@ -408,7 +507,7 @@ const StaffDetailScreen: React.FC<StaffDetailScreenProps> = (props) => {
                                 <button onClick={handleNextMonth} className="p-2 rounded-full hover:bg-gray-100">&gt;</button>
                             </div>
                             <div className="grid grid-cols-7 text-center text-xs font-semibold text-gray-500 mb-2">
-                                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => <div key={d}>{d}</div>)}
+                                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <div key={`${d}-${i}`}>{d}</div>)}
                             </div>
                             <div className="grid grid-cols-7 gap-1">
                                 {calendarData.map((day, index) => {
@@ -449,7 +548,7 @@ const StaffDetailScreen: React.FC<StaffDetailScreenProps> = (props) => {
                                                 <p className="font-semibold">{new Date(p.month + '-02T00:00:00').toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
                                                 <p className="text-xs text-gray-500">Paid on {new Date(p.paidOn).toLocaleDateString()}</p>
                                             </div>
-                                            <p className="font-bold text-green-600">{formatCurrency(p.amount + (p.bonus || 0))}</p>
+                                            <p className="font-bold text-green-600">{formatCurrency(p.totalAmount)}</p>
                                         </div>
                                     ))}
                                 </div>

@@ -5,22 +5,21 @@ interface PaySalaryModalProps {
     staffMember: Staff;
     payrolls: Payroll[];
     onClose: () => void;
-    onPay: (month: string, amount: number, bonus: number, taxDeduction: number) => void;
+    onPay: (payroll: Omit<Payroll, 'id'>) => void;
 }
 
 const PaySalaryModal: React.FC<PaySalaryModalProps> = ({ staffMember, payrolls, onClose, onPay }) => {
     const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
-    const [amount, setAmount] = useState<number | ''>(staffMember.salary || '');
+    const [basePay, setBasePay] = useState<number | ''>(staffMember.salary || '');
+    const [overtimePay, setOvertimePay] = useState<number | ''>('');
     const [bonus, setBonus] = useState<number | ''>('');
-    const [deductTax, setDeductTax] = useState(false);
+    const [taxDeduction, setTaxDeduction] = useState<number | ''>('');
+    const [otherDeductions, setOtherDeductions] = useState<number | ''>('');
+    const [paymentMethod, setPaymentMethod] = useState<Payroll['paymentMethod']>('Bank');
 
     const isMonthPaid = useMemo(() => {
         return payrolls.some(p => p.staffId === staffMember.id && p.month === selectedMonth);
     }, [payrolls, staffMember.id, selectedMonth]);
-
-    const taxAmount = useMemo(() => {
-        return deductTax ? (Number(amount) || 0) * 0.01 : 0;
-    }, [deductTax, amount]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -28,14 +27,25 @@ const PaySalaryModal: React.FC<PaySalaryModalProps> = ({ staffMember, payrolls, 
             alert('Salary for this month has already been paid.');
             return;
         }
-        if (typeof amount !== 'number' || amount < 0) {
-            alert('Please enter a valid salary amount.');
-            return;
-        }
-        onPay(selectedMonth, amount, typeof bonus === 'number' ? bonus : 0, taxAmount);
+        
+        const totalAmount = (Number(basePay) || 0) + (Number(overtimePay) || 0) + (Number(bonus) || 0) - (Number(taxDeduction) || 0) - (Number(otherDeductions) || 0);
+
+        onPay({
+            staffId: staffMember.id,
+            month: selectedMonth,
+            basePay: Number(basePay) || 0,
+            overtimePay: Number(overtimePay) || 0,
+            bonus: Number(bonus) || 0,
+            taxDeduction: Number(taxDeduction) || 0,
+            otherDeductions: Number(otherDeductions) || 0,
+            totalAmount,
+            paidOn: Date.now(),
+            paymentMethod,
+            status: 'Paid'
+        });
     };
 
-    const totalPayable = (typeof amount === 'number' ? amount : 0) + (typeof bonus === 'number' ? bonus : 0) - taxAmount;
+    const totalPayable = (Number(basePay) || 0) + (Number(overtimePay) || 0) + (Number(bonus) || 0) - (Number(taxDeduction) || 0) - (Number(otherDeductions) || 0);
 
     return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -44,7 +54,7 @@ const PaySalaryModal: React.FC<PaySalaryModalProps> = ({ staffMember, payrolls, 
                     <h2 className="text-xl font-bold text-text-primary">Pay Salary</h2>
                     <p className="text-sm text-text-secondary">to {staffMember.name}</p>
                 </div>
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                     <div>
                         <label htmlFor="month" className="block text-sm font-medium text-gray-700 mb-1">Select Month</label>
                         <input
@@ -57,44 +67,78 @@ const PaySalaryModal: React.FC<PaySalaryModalProps> = ({ staffMember, payrolls, 
                             style={{ colorScheme: 'light' }}
                         />
                     </div>
-                     <div>
-                        <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">Salary Amount (₹)</label>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label htmlFor="basePay" className="block text-sm font-medium text-gray-700 mb-1">Base Pay (₹)</label>
+                            <input
+                                type="number"
+                                id="basePay"
+                                value={basePay}
+                                onChange={(e) => setBasePay(parseFloat(e.target.value) || '')}
+                                required
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-text-primary"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="overtimePay" className="block text-sm font-medium text-gray-700 mb-1">Overtime (₹)</label>
+                            <input
+                                type="number"
+                                id="overtimePay"
+                                value={overtimePay}
+                                onChange={(e) => setOvertimePay(parseFloat(e.target.value) || '')}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-text-primary"
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label htmlFor="bonus" className="block text-sm font-medium text-gray-700 mb-1">Bonus (₹)</label>
+                            <input
+                                type="number"
+                                id="bonus"
+                                value={bonus}
+                                onChange={(e) => setBonus(parseFloat(e.target.value) || '')}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-text-primary"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="taxDeduction" className="block text-sm font-medium text-gray-700 mb-1">Tax (₹)</label>
+                            <input
+                                type="number"
+                                id="taxDeduction"
+                                value={taxDeduction}
+                                onChange={(e) => setTaxDeduction(parseFloat(e.target.value) || '')}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-text-primary"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label htmlFor="otherDeductions" className="block text-sm font-medium text-gray-700 mb-1">Other Deductions (₹)</label>
                         <input
                             type="number"
-                            id="amount"
-                            value={amount}
-                            onChange={(e) => setAmount(parseFloat(e.target.value) || '')}
-                            required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-text-primary placeholder:text-text-secondary"
+                            id="otherDeductions"
+                            value={otherDeductions}
+                            onChange={(e) => setOtherDeductions(parseFloat(e.target.value) || '')}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-text-primary"
                         />
                     </div>
                     <div>
-                        <label htmlFor="bonus" className="block text-sm font-medium text-gray-700 mb-1">Bonus (₹) (Optional)</label>
-                        <input
-                            type="number"
-                            id="bonus"
-                            value={bonus}
-                            onChange={(e) => setBonus(parseFloat(e.target.value) || '')}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-text-primary placeholder:text-text-secondary"
-                        />
-                    </div>
-
-                    <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                        <label htmlFor="deductTax" className="text-sm font-medium text-gray-700">Deduct 1% Tax</label>
-                        <button
-                            type="button"
-                            id="deductTax"
-                            className={`${deductTax ? 'bg-primary' : 'bg-gray-200'} relative inline-flex items-center h-6 rounded-full w-11 transition-colors`}
-                            onClick={() => setDeductTax(!deductTax)}
+                        <label htmlFor="paymentMethod" className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                        <select
+                            id="paymentMethod"
+                            value={paymentMethod}
+                            onChange={(e) => setPaymentMethod(e.target.value as any)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-text-primary"
                         >
-                            <span className={`${deductTax ? 'translate-x-6' : 'translate-x-1'} inline-block w-4 h-4 transform bg-white rounded-full transition-transform`}/>
-                        </button>
+                            <option value="Bank">Bank Transfer</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Check">Check</option>
+                        </select>
                     </div>
 
                     <div className="pt-2 border-t text-right">
-                        {deductTax && <p className="text-xs text-red-500">Tax Deduction: -₹{taxAmount.toFixed(2)}</p>}
                         <p className="text-sm text-gray-500">Total Payable</p>
-                        <p className="font-bold text-lg text-primary">₹{totalPayable.toLocaleString('en-IN')}</p>
+                        <p className="font-bold text-xl text-primary">₹{totalPayable.toLocaleString('en-IN')}</p>
                     </div>
 
                     {isMonthPaid && (

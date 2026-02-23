@@ -197,7 +197,7 @@ const SalesScreen: React.FC<SalesScreenProps> = (props) => {
     };
 
     return (
-        <div className="h-full w-full bg-gray-50 overflow-hidden">
+        <div className="h-full w-full bg-gray-50 dark:bg-gray-900 overflow-hidden">
             {step === 'EDIT_ORDER' && activeOrder ? (
                 <div className="h-full flex flex-col">
                     {isCheckoutModalOpen && (

@@ -22,7 +22,7 @@ const SocialIcon: React.FC<{ icon: React.ReactNode; onClick: () => void; borderC
     <button 
         type="button"
         onClick={onClick}
-        className={`w-14 h-14 rounded-full border ${borderColor} flex items-center justify-center transition-all active:scale-90 hover:shadow-md bg-white shrink-0 overflow-hidden`}
+        className={`w-14 h-14 rounded-full border ${borderColor} flex items-center justify-center transition-all active:scale-90 hover:shadow-md bg-white dark:bg-gray-800 shrink-0 overflow-hidden`}
         aria-label={label}
     >
         {icon}

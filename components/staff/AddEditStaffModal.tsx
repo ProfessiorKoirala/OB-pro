@@ -14,7 +14,10 @@ const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({ staffMember, onCl
         name: '',
         role: 'Waiter' as Staff['role'],
         pin: '',
+        payType: 'Monthly' as Staff['payType'],
         salary: undefined as number | undefined,
+        hourlyRate: undefined as number | undefined,
+        overtimeRate: undefined as number | undefined,
         joiningDate: undefined as string | undefined,
         bankAccountNumber: '',
         pan: '',
@@ -26,7 +29,10 @@ const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({ staffMember, onCl
                 name: staffMember.name,
                 role: staffMember.role,
                 pin: staffMember.pin,
+                payType: staffMember.payType || 'Monthly',
                 salary: staffMember.salary,
+                hourlyRate: staffMember.hourlyRate,
+                overtimeRate: staffMember.overtimeRate,
                 joiningDate: staffMember.joiningDate,
                 bankAccountNumber: staffMember.bankAccountNumber || '',
                 pan: staffMember.pan || '',
@@ -36,7 +42,10 @@ const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({ staffMember, onCl
                 name: '',
                 role: 'Waiter',
                 pin: '',
+                payType: 'Monthly',
                 salary: undefined,
+                hourlyRate: undefined,
+                overtimeRate: undefined,
                 joiningDate: new Date().toISOString().split('T')[0],
                 bankAccountNumber: '',
                 pan: '',
@@ -52,8 +61,8 @@ const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({ staffMember, onCl
             if (numericValue.length <= 4) {
                 setFormData(prev => ({ ...prev, pin: numericValue }));
             }
-        } else if (name === 'salary') {
-            setFormData(prev => ({ ...prev, salary: value ? parseFloat(value) : undefined }));
+        } else if (['salary', 'hourlyRate', 'overtimeRate'].includes(name)) {
+            setFormData(prev => ({ ...prev, [name]: value ? parseFloat(value) : undefined }));
         }
         else {
             setFormData(prev => ({
@@ -111,10 +120,33 @@ const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({ staffMember, onCl
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-text-primary placeholder:text-text-secondary"
                          />
                     </div>
-                    <div>
-                        <label htmlFor="salary" className="block text-sm font-medium text-gray-700 mb-1">Monthly Salary (₹)</label>
-                        <input type="number" name="salary" id="salary" value={formData.salary || ''} onChange={handleChange} placeholder="e.g., 30000" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-text-primary placeholder:text-text-secondary"/>
+                    <div className="relative">
+                        <label htmlFor="payType" className="block text-sm font-medium text-gray-700 mb-1">Payment Type *</label>
+                        <select name="payType" id="payType" value={formData.payType} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface appearance-none text-text-primary">
+                            <option value="Monthly">Monthly Salary</option>
+                            <option value="Hourly">Hourly Pay</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 top-7">
+                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                        </div>
                     </div>
+                    {formData.payType === 'Monthly' ? (
+                        <div>
+                            <label htmlFor="salary" className="block text-sm font-medium text-gray-700 mb-1">Monthly Salary (₹)</label>
+                            <input type="number" name="salary" id="salary" value={formData.salary || ''} onChange={handleChange} placeholder="e.g., 30000" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-text-primary placeholder:text-text-secondary"/>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label htmlFor="hourlyRate" className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate (₹)</label>
+                                <input type="number" name="hourlyRate" id="hourlyRate" value={formData.hourlyRate || ''} onChange={handleChange} placeholder="e.g., 200" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-text-primary placeholder:text-text-secondary"/>
+                            </div>
+                            <div>
+                                <label htmlFor="overtimeRate" className="block text-sm font-medium text-gray-700 mb-1">Overtime Rate (₹/hr)</label>
+                                <input type="number" name="overtimeRate" id="overtimeRate" value={formData.overtimeRate || ''} onChange={handleChange} placeholder="e.g., 300" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-text-primary placeholder:text-text-secondary"/>
+                            </div>
+                        </div>
+                    )}
                      <div>
                         <label htmlFor="joiningDate" className="block text-sm font-medium text-gray-700 mb-1">Joining Date</label>
                         <input type="date" name="joiningDate" id="joiningDate" value={formData.joiningDate || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-text-primary placeholder:text-text-secondary" style={{ colorScheme: 'light' }}/>

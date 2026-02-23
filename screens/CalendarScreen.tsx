@@ -92,7 +92,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ orders, expenses
                 </div>
 
                 <div className="grid grid-cols-7 text-center text-[13px] font-extrabold text-gray-300 dark:text-gray-600 mb-6 tracking-widest">
-                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => <div key={d}>{d}</div>)}
+                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <div key={`${d}-${i}`}>{d}</div>)}
                 </div>
                 <div className="grid grid-cols-7 gap-y-4">
                     {daysInMonth.map((day, index) => {

@@ -11,6 +11,8 @@ export interface User {
   password?: string;
   enablePinLogin?: boolean;
   pinCode?: string | null;
+  enableBiometricLogin?: boolean;
+  biometricCredentialId?: string;
 }
 
 export interface BusinessProfile {
@@ -30,7 +32,10 @@ export interface Staff {
     name: string;
     role: 'Manager' | 'Cashier' | 'Waiter' | 'Chef' | 'Other';
     pin: string;
+    payType: 'Monthly' | 'Hourly';
     salary?: number;
+    hourlyRate?: number;
+    overtimeRate?: number;
     joiningDate?: string;
     status: 'Active' | 'On Leave' | 'Former';
     bankAccountNumber?: string;
@@ -55,18 +60,33 @@ export interface Attendance {
     date: string;
     clockIn: number | null;
     clockOut: number | null;
-    status: 'Present' | 'Leave' | 'Half Day' | 'Sick Leave';
+    status: 'Present' | 'Leave' | 'Half Day' | 'Sick Leave' | 'Absent';
     reason?: string;
+    hoursWorked?: number;
+}
+
+export interface Roster {
+    id: string;
+    staffId: string;
+    date: string;
+    shiftStart: string;
+    shiftEnd: string;
+    notes?: string;
 }
 
 export interface Payroll {
     id: string;
     staffId: string;
     month: string;
-    amount: number;
+    basePay: number;
+    overtimePay: number;
+    bonus: number;
+    taxDeduction: number;
+    otherDeductions: number;
+    totalAmount: number;
     paidOn: number;
-    bonus?: number;
-    taxDeduction?: number;
+    paymentMethod: 'Cash' | 'Bank' | 'Check';
+    status: 'Pending' | 'Paid';
 }
 
 export interface Discount {
@@ -345,6 +365,7 @@ export interface AppDataBackup {
     tables: Table[];
     discounts: Discount[];
     attendance: Attendance[];
+    rosters: Roster[];
     payrolls: Payroll[];
     marketingTemplates: { text: string }[];
     nepaliMarketingTemplates: { text: string }[];

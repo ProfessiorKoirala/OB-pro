@@ -18,12 +18,14 @@ import PrintableTodayDeliveryManifest from '../components/tracker/PrintableToday
 
 const renderAndPrint = (content: React.ReactElement, onPrintFinished?: () => void) => {
     const iframe = document.createElement('iframe');
+    // Some browsers ignore print() on 0x0 or display:none elements
     iframe.style.position = 'fixed';
-    iframe.style.right = '100vw';
-    iframe.style.bottom = '100vh';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
+    iframe.style.left = '-9999px';
+    iframe.style.top = '0';
+    iframe.style.width = '800px'; // Give it some width
+    iframe.style.height = '600px';
     iframe.style.border = '0';
+    iframe.style.visibility = 'hidden';
     iframe.title = 'OB Pro Print Job';
 
     document.body.appendChild(iframe);
@@ -32,27 +34,64 @@ const renderAndPrint = (content: React.ReactElement, onPrintFinished?: () => voi
     if (!printDocument || !iframe.contentWindow) {
         console.error("Print Engine Error: Access denied to iframe context.");
         document.body.removeChild(iframe);
+        onPrintFinished?.();
         return;
     }
 
+    // Set basic HTML structure and viewport
+    printDocument.open();
+    printDocument.write(`
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <title>Print</title>
+            </head>
+            <body>
+                <div id="print-root"></div>
+            </body>
+        </html>
+    `);
+    printDocument.close();
+
+    const head = printDocument.head;
+    
     // Clone global styles and fonts into the print iframe
-    const head = printDocument.head || printDocument.getElementsByTagName('head')[0];
     document.head.querySelectorAll('link, style').forEach(el => {
         head.appendChild(el.cloneNode(true));
     });
 
-    const printContainer = printDocument.createElement('div');
-    printDocument.body.appendChild(printContainer);
+    const printContainer = printDocument.getElementById('print-root');
+    if (!printContainer) {
+        document.body.removeChild(iframe);
+        onPrintFinished?.();
+        return;
+    }
     
     const root = createRoot(printContainer);
     root.render(content);
 
-    const checkReadyAndPrint = () => {
+    let attempts = 0;
+    const maxAttempts = 50; // ~5 seconds max wait
+
+    const checkReadyAndPrint = async () => {
+        attempts++;
         const images = printDocument.getElementsByTagName('img');
         const allLoaded = Array.from(images).every(img => img.complete);
+        
+        // Wait for fonts to be ready if supported
+        let fontsReady = true;
+        try {
+            if ((printDocument as any).fonts) {
+                fontsReady = await (printDocument as any).fonts.ready;
+            }
+        } catch (e) {
+            console.warn('Font loading check failed', e);
+        }
 
-        if (allLoaded) {
-            // Minor delay for React layout pass and font rendering
+        if ((allLoaded && fontsReady) || attempts >= maxAttempts) {
+            // Minor delay for React layout pass
             setTimeout(() => {
                 try {
                     if (iframe.contentWindow) {
@@ -60,22 +99,23 @@ const renderAndPrint = (content: React.ReactElement, onPrintFinished?: () => voi
                         iframe.contentWindow.print();
                         
                         // Cleanup sequence
+                        // On some mobile browsers, the print dialog is blocking, 
+                        // but on others it's not. We use a longer timeout for cleanup.
                         setTimeout(() => {
                             root.unmount();
                             if (iframe.parentElement) {
                                 iframe.parentElement.removeChild(iframe);
                             }
                             onPrintFinished?.();
-                        }, 1000);
+                        }, 2000);
                     }
                 } catch (e) {
                     console.error('Print trigger failed:', e);
                     if (iframe.parentElement) document.body.removeChild(iframe);
                     onPrintFinished?.();
                 }
-            }, 600);
+            }, 500);
         } else {
-            // Keep polling until images are ready
             requestAnimationFrame(checkReadyAndPrint);
         }
     };

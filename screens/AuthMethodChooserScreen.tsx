@@ -2,10 +2,11 @@ import React from 'react';
 import { User } from '../types';
 import PinIcon from '../components/icons/PinIcon';
 import LockIcon from '../components/icons/LockIcon';
+import FingerprintIcon from '../components/icons/FingerprintIcon';
 
 interface AuthMethodChooserScreenProps {
     user: User;
-    onSelect: (method: 'PIN' | 'PASSWORD') => void;
+    onSelect: (method: 'PIN' | 'PASSWORD' | 'BIOMETRIC') => void;
     onBack: () => void;
 }
 
@@ -61,6 +62,26 @@ const AuthMethodChooserScreen: React.FC<AuthMethodChooserScreenProps> = ({ user,
                                 <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
                             </div>
                         </button>
+
+                        {user.enableBiometricLogin && (
+                            <button 
+                                onClick={() => onSelect('BIOMETRIC')}
+                                className="w-full flex items-center justify-between p-6 bg-blue-50/30 dark:bg-blue-900/10 rounded-[32px] border border-blue-100 dark:border-blue-900/20 active:scale-95 transition-all group shadow-sm"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg">
+                                        <FingerprintIcon className="w-7 h-7" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-black text-black dark:text-white uppercase tracking-widest text-sm">Biometric</p>
+                                        <p className="text-[9px] text-blue-500 font-black uppercase tracking-[0.2em] mt-0.5">Fingerprint / Face ID</p>
+                                    </div>
+                                </div>
+                                <div className="w-8 h-8 bg-white dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                </div>
+                            </button>
+                        )}
 
                         <button 
                             onClick={() => onSelect('PASSWORD')}

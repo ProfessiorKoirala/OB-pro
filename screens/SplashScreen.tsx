@@ -60,10 +60,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, onComplete }) => {
                                     <svg className="absolute inset-0 w-full h-full -rotate-2 scale-125" viewBox="0 0 160 80" fill="none">
                                         <path 
                                             d="M10,40 C10,10 150,10 150,40 C150,70 10,70 15,40" 
-                                            stroke="#000000" 
+                                            stroke="currentColor" 
                                             strokeWidth="4" 
                                             strokeLinecap="round"
-                                            className="animate-draw-path"
+                                            className="animate-draw-path text-black dark:text-white"
                                             style={{ strokeDasharray: 1000, strokeDashoffset: 1000, animationDelay: '1s' }}
                                         />
                                     </svg>
@@ -83,10 +83,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, onComplete }) => {
                                         <svg className="absolute -bottom-4 left-0 w-full h-6" viewBox="0 0 100 10" preserveAspectRatio="none">
                                             <path 
                                                 d="M0,5 Q50,0 100,8" 
-                                                stroke="#000000" 
+                                                stroke="currentColor" 
                                                 strokeWidth="8" 
                                                 strokeLinecap="round"
-                                                className="animate-draw-path"
+                                                className="animate-draw-path text-black dark:text-white"
                                                 style={{ strokeDasharray: 100, strokeDashoffset: 100, animationDelay: '2.8s' }}
                                             />
                                         </svg>

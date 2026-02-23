@@ -1,13 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
-import { Order, Expense, Product, Payment } from '../types';
+import { Order, Expense, Product, Payment, BusinessProfile } from '../types';
 import HomeIcon from '../components/icons/HomeIcon';
+import PrinterIcon from '../components/icons/PrinterIcon';
+import { printReport } from '../utils/printUtils';
 
 interface ReportsScreenProps {
   orders: Order[];
   expenses: Expense[];
   products: Product[];
   payments: Payment[];
+  businessProfile: BusinessProfile;
   onHome?: () => void;
 }
 
@@ -15,8 +18,54 @@ type Period = 'Today' | 'This Week' | 'This Month' | 'All Time';
 
 const formatCurrency = (value: number) => `₹${Math.round(value).toLocaleString('en-IN')}`;
 
-const ReportsScreen: React.FC<ReportsScreenProps> = ({ orders, expenses, products, payments, onHome }) => {
+const ReportsScreen: React.FC<ReportsScreenProps> = ({ orders, expenses, products, payments, businessProfile, onHome }) => {
     const [period, setPeriod] = useState<Period>('This Month');
+
+    const handlePrintReport = () => {
+        const content = (
+            <div style={{ padding: '20px' }}>
+                <h3 style={{ borderBottom: '2px solid #000', paddingBottom: '10px', marginBottom: '20px' }}>Financial Summary ({period})</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    <div>
+                        <p><strong>Total Sales:</strong> {formatCurrency(financialBreakdown.totalSales)}</p>
+                        <p><strong>Cash Sales:</strong> {formatCurrency(financialBreakdown.cashSales)}</p>
+                        <p><strong>Bank Sales:</strong> {formatCurrency(financialBreakdown.bankSales)}</p>
+                        <p><strong>Credit Sales:</strong> {formatCurrency(financialBreakdown.creditSales)}</p>
+                    </div>
+                    <div>
+                        <p><strong>Total Expenses:</strong> {formatCurrency(financialBreakdown.totalExpenses)}</p>
+                        <p><strong>Net Profit:</strong> {formatCurrency(financialBreakdown.netProfit)}</p>
+                        <p><strong>Due to Recover:</strong> {formatCurrency(financialBreakdown.dueToRecover)}</p>
+                    </div>
+                </div>
+                
+                <h3 style={{ borderBottom: '1px solid #ccc', paddingBottom: '5px', marginTop: '30px' }}>Sales Breakdown</h3>
+                <p><strong>Total Orders:</strong> {salesReport.totalOrders}</p>
+                <p><strong>Average Order Value:</strong> {formatCurrency(salesReport.averageOrderValue)}</p>
+                
+                <h3 style={{ borderBottom: '1px solid #ccc', paddingBottom: '5px', marginTop: '30px' }}>Top Selling Products</h3>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                        <tr style={{ borderBottom: '1px solid #000' }}>
+                            <th style={{ textAlign: 'left' }}>Product</th>
+                            <th style={{ textAlign: 'right' }}>Qty</th>
+                            <th style={{ textAlign: 'right' }}>Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {salesReport.topProducts.slice(0, 10).map((p, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                                <td>{p.name}</td>
+                                <td style={{ textAlign: 'right' }}>{p.quantity}</td>
+                                <td style={{ textAlign: 'right' }}>{formatCurrency(p.revenue)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        );
+        printReport(`Financial Report - ${period}`, businessProfile, content);
+    };
 
     const filteredData = useMemo(() => {
         const now = new Date();
@@ -210,11 +259,20 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ orders, expenses, product
                         <h1 className="text-3xl font-black text-black dark:text-white italic uppercase tracking-tighter leading-none">OB <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded ml-1 font-black">Pro</span></h1>
                         <p className="text-[10px] font-black text-gray-300 dark:text-gray-600 uppercase tracking-[0.4em] mt-2 italic">Intelligence Terminal</p>
                     </div>
-                    {onHome && (
-                        <button onClick={onHome} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-black dark:hover:text-white transition-all shadow-sm">
-                            <HomeIcon className="w-6 h-6" />
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={handlePrintReport}
+                            className="p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-black dark:hover:text-white transition-all shadow-sm flex items-center gap-2"
+                        >
+                            <PrinterIcon className="w-6 h-6" />
+                            <span className="text-[10px] font-black uppercase">Print</span>
                         </button>
-                    )}
+                        {onHome && (
+                            <button onClick={onHome} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-black dark:hover:text-white transition-all shadow-sm">
+                                <HomeIcon className="w-6 h-6" />
+                            </button>
+                        )}
+                    </div>
                 </div>
             </header>
 
