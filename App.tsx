@@ -8,7 +8,7 @@ import MainScreen from './MainScreen';
 import { User, AppDataBackup } from './types';
 import AccountChooserScreen from './screens/AccountChooserScreen';
 import { loadDataFromDrive, GOOGLE_CLIENT_ID, GAPI_TOKEN_EXPIRED_ERROR } from './googleApi';
-import { getInitialData, loadLocalDataForUser, mergeWithInitialData } from './utils/dataUtils';
+import { getInitialData, loadLocalDataForUser, mergeWithInitialData, deleteLocalDataForUser } from './utils/dataUtils';
 import PinLoginScreen from './screens/PinLoginScreen';
 import PasswordLoginScreen from './screens/PasswordLoginScreen';
 import PremiumFeatureScreen from './screens/PremiumFeatureScreen';
@@ -317,6 +317,37 @@ const AppContent: React.FC = () => {
         }
     }, []);
 
+    const handleDeleteUser = useCallback((userId: string) => {
+        if (!window.confirm("Are you sure you want to delete this profile? This will permanently erase all business data associated with this account.")) {
+            return;
+        }
+
+        setUsers(prevUsers => {
+            const updatedUsers = prevUsers.filter(u => u.id !== userId);
+            localStorage.setItem('ob-pro-users', JSON.stringify(updatedUsers));
+            
+            if (updatedUsers.length === 0) {
+                setAuthState('LOGIN_FORM');
+            } else {
+                setAuthState('CHOOSE_ACCOUNT');
+            }
+            return updatedUsers;
+        });
+        
+        // Delete their local data
+        deleteLocalDataForUser(userId);
+        localStorage.removeItem(`ob-pro-data-${userId}`);
+        localStorage.removeItem(`ob-pro-pending-orders-${userId}`);
+        
+        // If the deleted user was the active user, log out
+        if (activeUser?.id === userId) {
+            handleLogout();
+        } else if (authenticatingUser?.id === userId) {
+            setAuthenticatingUser(null);
+            setAppState('AUTH');
+        }
+    }, [activeUser, authenticatingUser, handleLogout]);
+
     const renderContent = () => {
         switch (appState) {
             case 'LOADING':
@@ -343,7 +374,7 @@ const AppContent: React.FC = () => {
             case 'AUTH':
                 if (showPremiumScreen) return <PremiumFeatureScreen onBack={() => setShowPremiumScreen(false)} />;
                 return authState === 'CHOOSE_ACCOUNT' 
-                    ? <AccountChooserScreen users={users} onSelectAccount={handleSelectAccount} onAddNewAccount={() => setAuthState('LOGIN_FORM')} onPremiumClick={() => setShowPremiumScreen(true)} />
+                    ? <AccountChooserScreen users={users} onSelectAccount={handleSelectAccount} onAddNewAccount={() => setAuthState('LOGIN_FORM')} onPremiumClick={() => setShowPremiumScreen(true)} onDeleteAccount={handleDeleteUser} />
                     : <LoginScreen onLocalLogin={handleLocalLoginAttempt} onLocalSignUp={handleLocalSignUp} onGoogleSignInClick={() => setShowPremiumScreen(true)} onLoginComplete={()=>{}} onSignUpComplete={()=>{}} />;
             case 'AUTHENTICATING_USER':
                 if (!authenticatingUser) return <SplashScreen />;
@@ -354,15 +385,15 @@ const AppContent: React.FC = () => {
                     return <SplashScreen message="Authenticating Biometric..." onComplete={() => {}} />;
                 }
                 return selectedAuthMethod === 'PIN' || (authenticatingUser.pinCode && !selectedAuthMethod)
-                    ? <PinLoginScreen user={authenticatingUser} correctPin={authenticatingUser.pinCode!} onSuccess={() => handleAuthAttempt(true, authenticatingUser)} onBack={() => setAppState('AUTH')} />
+                    ? <PinLoginScreen user={authenticatingUser} correctPin={authenticatingUser.pinCode!} onSuccess={() => handleAuthAttempt(true, authenticatingUser)} onBack={() => setAppState('AUTH')} onDeleteProfile={() => handleDeleteUser(authenticatingUser.id)} />
                     : <PasswordLoginScreen user={authenticatingUser} onSuccess={(pass) => {
                         const isCorrect = pass === authenticatingUser.password;
                         handleAuthAttempt(isCorrect, authenticatingUser);
                         return isCorrect;
-                    }} onBack={() => setAppState('AUTH')} />;
+                    }} onBack={() => setAppState('AUTH')} onDeleteProfile={() => handleDeleteUser(authenticatingUser.id)} />;
             case 'LOGGED_IN':
                 if (activeUser && initialData) {
-                    return <MainScreen activeUser={activeUser} initialData={initialData} onLogout={handleLogout} onUpdateUser={handleUpdateUser} onUpdateUserEmail={handleUpdateUserEmail} />;
+                    return <MainScreen activeUser={activeUser} initialData={initialData} onLogout={handleLogout} onUpdateUser={handleUpdateUser} onUpdateUserEmail={handleUpdateUserEmail} onDeleteUser={handleDeleteUser} />;
                 }
                 return <SplashScreen />;
             default:

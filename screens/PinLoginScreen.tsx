@@ -5,6 +5,7 @@ interface PinLoginScreenProps {
     correctPin: string;
     onSuccess: () => void;
     onBack: () => void;
+    onDeleteProfile?: () => void;
     user: { name: string; profilePicUrl?: string };
 }
 
@@ -30,7 +31,7 @@ const KeypadButton: React.FC<{ onClick: () => void; label: string }> = ({ onClic
     </button>
 );
 
-const PinLoginScreen: React.FC<PinLoginScreenProps> = ({ correctPin, onSuccess, onBack, user }) => {
+const PinLoginScreen: React.FC<PinLoginScreenProps> = ({ correctPin, onSuccess, onBack, onDeleteProfile, user }) => {
     const [pin, setPin] = useState('');
     const [error, setError] = useState('');
 
@@ -77,6 +78,17 @@ const PinLoginScreen: React.FC<PinLoginScreenProps> = ({ correctPin, onSuccess, 
                     <button onClick={onBack} className="font-semibold text-text-secondary h-16 w-16 sm:h-20 sm:w-20 flex items-center justify-center text-sm">Back</button>
                     <KeypadButton onClick={() => handleKeyPress('0')} label="0" />
                     <KeypadButton onClick={handleBackspace} label="⌫" />
+                </div>
+
+                <div className="mt-12 flex flex-col items-center gap-4">
+                    {onDeleteProfile && (
+                        <button 
+                            onClick={onDeleteProfile}
+                            className="text-xs font-black text-red-400 hover:text-red-600 uppercase tracking-widest transition-colors"
+                        >
+                            Delete Profile
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

@@ -7,9 +7,10 @@ interface AccountChooserScreenProps {
   onSelectAccount: (user: User) => void;
   onAddNewAccount: () => void;
   onPremiumClick: () => void;
+  onDeleteAccount: (userId: string) => void;
 }
 
-const AccountChooserScreen: React.FC<AccountChooserScreenProps> = ({ users, onSelectAccount, onAddNewAccount }) => {
+const AccountChooserScreen: React.FC<AccountChooserScreenProps> = ({ users, onSelectAccount, onAddNewAccount, onDeleteAccount }) => {
   return (
     <div className="min-h-screen flex flex-col bg-[#FFFFFF] dark:bg-gray-950 transition-colors relative overflow-hidden font-sans">
         
@@ -51,10 +52,18 @@ const AccountChooserScreen: React.FC<AccountChooserScreenProps> = ({ users, onSe
 
                 <div className="space-y-5 animate-slide-up [animation-delay:400ms]">
                     {users.map(user => (
-                        <button
+                        <div
                             key={user.id}
                             onClick={() => onSelectAccount(user)}
-                            className="w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-gray-100 dark:border-gray-800 p-5 rounded-[36px] flex items-center gap-4 shadow-[0_12px_40px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.06)] active:scale-[0.98] transition-all text-left group relative"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    onSelectAccount(user);
+                                }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            className="w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-gray-100 dark:border-gray-800 p-5 rounded-[36px] flex items-center gap-4 shadow-[0_12px_40px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.06)] active:scale-[0.98] transition-all text-left group relative cursor-pointer outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
                         >
                             <div className="relative shrink-0">
                                 <div className="w-16 h-16 rounded-[24px] overflow-hidden border-2 border-white dark:border-gray-700 shadow-lg transform group-hover:scale-105 transition-transform">
@@ -74,10 +83,24 @@ const AccountChooserScreen: React.FC<AccountChooserScreenProps> = ({ users, onSe
                                 <p className="font-black text-black dark:text-white text-xl tracking-tighter truncate uppercase italic leading-none">{user.name}</p>
                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest truncate mt-2">{user.email}</p>
                             </div>
-                            <div className="w-10 h-10 bg-gray-50 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-300 group-hover:text-black dark:group-hover:text-white group-hover:bg-white dark:group-hover:bg-gray-600 transition-all group-hover:translate-x-1 shadow-sm">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDeleteAccount(user.id);
+                                    }}
+                                    className="w-10 h-10 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-100 transition-all shadow-sm"
+                                    title="Delete Profile"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                                <div className="w-10 h-10 bg-gray-50 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-300 group-hover:text-black dark:group-hover:text-white group-hover:bg-white dark:group-hover:bg-gray-600 transition-all group-hover:translate-x-1 shadow-sm">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                </div>
                             </div>
-                        </button>
+                        </div>
                     ))}
                     
                     <button

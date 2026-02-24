@@ -27,6 +27,8 @@ import WhatsNextModal from '../components/settings/WhatsNextModal';
 import ImportantNotesModal from '../components/settings/ImportantNotesModal';
 import ChartIcon from '../components/icons/ChartIcon';
 import PrinterIcon from '../components/icons/PrinterIcon';
+import HeartIcon from '../components/icons/HeartIcon';
+import SupportDeveloperModal from '../components/settings/SupportDeveloperModal';
 
 interface SettingsScreenProps {
     isVatEnabled: boolean;
@@ -40,6 +42,7 @@ interface SettingsScreenProps {
     onUpdateUserSettings: (updates: Partial<User>) => void;
     setCurrentView: (view: MainView) => void;
     onClearAllData: () => void;
+    onDeleteUser: (userId: string) => void;
     businessProfile: BusinessProfile;
     onUpdateBusinessProfile: (profile: BusinessProfile) => void;
     onPremiumFeatureClick?: () => void;
@@ -122,14 +125,14 @@ const CheckCircleIcon: React.FC<{ className?: string }> = ({ className }) => (
 const daysOfWeek: (keyof BusinessSettings['workingDays'])[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
-    const { businessSettings, onUpdateBusinessSettings, activeUser, onUpdateUserSettings, setCurrentView, onClearAllData, businessProfile, onUpdateBusinessProfile, onPremiumFeatureClick, syncStatus, onForceSync } = props;
+    const { businessSettings, onUpdateBusinessSettings, activeUser, onUpdateUserSettings, setCurrentView, onClearAllData, onDeleteUser, businessProfile, onUpdateBusinessProfile, onPremiumFeatureClick, syncStatus, onForceSync } = props;
     const [isPinModalOpen, setPinModalOpen] = useState(false);
     const [isLogoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
     const [clearDataStep, setClearDataStep] = useState(0);
     const [hasFileSystemAccess, setHasFileSystemAccess] = useState(false);
     const [isQrCodeExpanded, setIsQrCodeExpanded] = useState(false);
-    const [activeModal, setActiveModal] = useState<'privacy' | 'roadmap' | 'safety' | null>(null);
+    const [activeModal, setActiveModal] = useState<'privacy' | 'roadmap' | 'safety' | 'support' | null>(null);
     const [biometricSupported, setBiometricSupported] = useState(false);
     const qrInputRef = useRef<HTMLInputElement>(null);
 
@@ -306,9 +309,19 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
             {activeModal === 'privacy' && <PrivacyPolicyModal onClose={() => setActiveModal(null)} />}
             {activeModal === 'roadmap' && <WhatsNextModal onClose={() => setActiveModal(null)} />}
             {activeModal === 'safety' && <ImportantNotesModal onClose={() => setActiveModal(null)} />}
+            <SupportDeveloperModal isOpen={activeModal === 'support'} onClose={() => setActiveModal(null)} />
 
-            <header className="mb-6 animate-slide-down">
+            <header className="mb-6 animate-slide-down flex items-center justify-between">
                 <h1 className="text-3xl font-bold text-text-primary dark:text-gray-100">Settings</h1>
+                <button 
+                    onClick={() => setCurrentView(MainView.DASHBOARD)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm text-primary font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                    </svg>
+                    <span>Home</span>
+                </button>
             </header>
             
             <div className="space-y-6">
@@ -512,6 +525,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
                             subtitle="Important notes to prevent data loss"
                             onClick={() => setActiveModal('safety')}
                         />
+                        <SettingsRow 
+                            icon={<HeartIcon className="h-7 w-7 text-red-500" />} 
+                            title="Buy a coffee, support developer" 
+                            subtitle="Support the development of OB Pro"
+                            onClick={() => setActiveModal('support')}
+                        />
                     </div>
                 </SettingsCard>
                  
@@ -529,6 +548,19 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
                                 className="font-semibold text-sm bg-red-100 text-red-600 px-4 py-2 rounded-lg hover:bg-red-200 disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed"
                             >
                                 Clear
+                            </button>
+                        </SettingsRow>
+                        <SettingsRow 
+                            icon={<TrashIcon className="h-7 w-7" />} 
+                            title="Delete Entire Profile" 
+                            subtitle="Permanently delete this account and all its data" 
+                            isDestructive={true}
+                        >
+                            <button 
+                                onClick={() => onDeleteUser(activeUser.id)}
+                                className="font-semibold text-sm bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 shadow-md"
+                            >
+                                Delete Profile
                             </button>
                         </SettingsRow>
                     </div>

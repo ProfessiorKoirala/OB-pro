@@ -5,9 +5,10 @@ interface PasswordLoginScreenProps {
     user: User;
     onSuccess: (password: string) => boolean;
     onBack: () => void;
+    onDeleteProfile?: () => void;
 }
 
-const PasswordLoginScreen: React.FC<PasswordLoginScreenProps> = ({ user, onSuccess, onBack }) => {
+const PasswordLoginScreen: React.FC<PasswordLoginScreenProps> = ({ user, onSuccess, onBack, onDeleteProfile }) => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -60,9 +61,19 @@ const PasswordLoginScreen: React.FC<PasswordLoginScreenProps> = ({ user, onSucce
                     </button>
                 </form>
 
-                <button onClick={onBack} className="mt-6 text-sm font-semibold text-text-secondary hover:text-primary">
-                    Choose a different account
-                </button>
+                <div className="mt-6 flex flex-col items-center gap-4">
+                    <button onClick={onBack} className="text-sm font-semibold text-text-secondary hover:text-primary transition-colors">
+                        Choose a different account
+                    </button>
+                    {onDeleteProfile && (
+                        <button 
+                            onClick={onDeleteProfile}
+                            className="text-xs font-black text-red-400 hover:text-red-600 uppercase tracking-widest transition-colors"
+                        >
+                            Delete Profile
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );

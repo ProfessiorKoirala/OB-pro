@@ -238,6 +238,65 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ orders, expenses, product
 
     }, [filteredData.filteredOrders]);
 
+    const paymentMethodReport = useMemo(() => {
+        const completedOrders = filteredData.filteredOrders.filter(o => o.status === 'Completed');
+        const methods: { [key: string]: number } = { 'Cash': 0, 'Bank': 0, 'Credit': 0 };
+        
+        completedOrders.forEach(o => {
+            if (o.paymentMethod === 'Split') {
+                methods['Cash'] += (o.cashPaid || 0);
+                methods['Bank'] += (o.bankPaid || 0);
+            } else {
+                const method = o.paymentMethod || 'Cash';
+                methods[method] = (methods[method] || 0) + (o.grandTotal || 0);
+            }
+        });
+
+        return Object.entries(methods)
+            .filter(([_, value]) => value > 0)
+            .map(([name, value]) => ({ name, value }));
+    }, [filteredData.filteredOrders]);
+
+    const expenseCategoryReport = useMemo(() => {
+        const categories: { [key: string]: number } = {};
+        filteredData.filteredExpenses.forEach(e => {
+            const cat = e.category || 'Other';
+            categories[cat] = (categories[cat] || 0) + e.amount;
+        });
+
+        return Object.entries(categories)
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, value]) => ({ name, value }));
+    }, [filteredData.filteredExpenses]);
+
+    const customerReport = useMemo(() => {
+        const customerStats: { [key: string]: { name: string, count: number, total: number } } = {};
+        filteredData.filteredOrders.forEach(o => {
+            const name = o.customerName || 'Guest';
+            if (!customerStats[name]) customerStats[name] = { name, count: 0, total: 0 };
+            customerStats[name].count += 1;
+            customerStats[name].total += (o.grandTotal || 0);
+        });
+
+        return Object.values(customerStats)
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 5);
+    }, [filteredData.filteredOrders]);
+
+    const hourlySalesTrend = useMemo(() => {
+        const hours = Array.from({ length: 24 }, (_, i) => ({ hour: i, sales: 0 }));
+        filteredData.filteredOrders.forEach(o => {
+            const hour = new Date(o.timestamp).getHours();
+            hours[hour].sales += (o.grandTotal || 0);
+        });
+        return hours.map(h => ({
+            name: `${h.hour}:00`,
+            sales: h.sales
+        }));
+    }, [filteredData.filteredOrders]);
+
+    const COLORS = ['#4B2A63', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#6366F1', '#EC4899'];
+
     const ReportCard: React.FC<{title: string; children: React.ReactNode; dark?: boolean}> = ({ title, children, dark }) => (
         <div className={`p-6 rounded-[32px] shadow-sm border transition-colors ${dark ? 'bg-black text-white border-black' : 'bg-white text-text-primary border-gray-100'}`}>
             <h2 className={`text-[10px] font-black uppercase tracking-[0.4em] mb-6 ${dark ? 'opacity-40' : 'text-gray-400'}`}>{title}</h2>
@@ -371,6 +430,91 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ orders, expenses, product
                             </ResponsiveContainer>
                         </div>
                     ) : <NoData />}
+                </ReportCard>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <ReportCard title="Payment Methods">
+                        {paymentMethodReport.length > 0 ? (
+                            <div className="h-[250px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart isAnimationActive={false}>
+                                        <Pie
+                                            data={paymentMethodReport}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={80}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                            isAnimationActive={false}
+                                        >
+                                            {paymentMethodReport.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                                        <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                        ) : <NoData />}
+                    </ReportCard>
+
+                    <ReportCard title="Expense Breakdown">
+                        {expenseCategoryReport.length > 0 ? (
+                            <div className="h-[250px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart isAnimationActive={false}>
+                                        <Pie
+                                            data={expenseCategoryReport}
+                                            cx="50%"
+                                            cy="50%"
+                                            outerRadius={80}
+                                            dataKey="value"
+                                            isAnimationActive={false}
+                                            label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                            labelLine={false}
+                                        >
+                                            {expenseCategoryReport.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                        ) : <NoData />}
+                    </ReportCard>
+                </div>
+
+                <ReportCard title="Top Customers (by Value)">
+                    {customerReport.length > 0 ? (
+                        <div className="h-[250px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={customerReport} isAnimationActive={false}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                    <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} dy={10} fontStyle="italic" fontWeight="bold" />
+                                    <YAxis hide />
+                                    <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} formatter={(value) => formatCurrency(value as number)} animationDuration={0}/>
+                                    <Bar dataKey="total" fill="#10B981" radius={[8, 8, 0, 0]} isAnimationActive={false} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : <NoData />}
+                </ReportCard>
+
+                <ReportCard title="Hourly Sales Intensity">
+                    <div className="h-[250px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={hourlySalesTrend} isAnimationActive={false}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                <XAxis dataKey="name" fontSize={8} tickLine={false} axisLine={false} dy={10} fontStyle="italic" fontWeight="bold" interval={2} />
+                                <YAxis hide />
+                                <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} formatter={(value) => formatCurrency(value as number)} animationDuration={0}/>
+                                <Line type="stepAfter" dataKey="sales" stroke="#4B2A63" strokeWidth={2} dot={false} isAnimationActive={false} fill="#4B2A63" opacity={0.8} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
                 </ReportCard>
             </div>
         </div>

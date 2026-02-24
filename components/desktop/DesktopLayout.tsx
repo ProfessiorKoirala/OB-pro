@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { MainView, Order, Expense, Product, Creditor, Customer, Table, Payment, DeletedItem, Reminder, BusinessSettings, Holiday, AppDataBackup, User, Staff, Discount, BusinessProfile, Vendor, Purchase, VendorPayment, Attendance, Payroll, Notification, KOT, KOTItem, DeliveryPartner, OrderItem, OrderStatus } from '../../types';
+import { mergeWithInitialData } from '../../utils/dataUtils';
 import DesktopSidebar from './DesktopSidebar';
 import DashboardScreen from '../../screens/DashboardScreen';
 import SalesScreen from '../../screens/SalesScreen';
@@ -61,11 +62,12 @@ interface DesktopLayoutProps {
     setIsVatEnabled: React.Dispatch<React.SetStateAction<boolean>>;
     handleClearAllData: () => void;
     handleDeleteTable: (tableId: string) => void;
+    onDeleteUser: (userId: string) => void;
     onPremiumFeatureClick?: () => void;
 }
 
 const DesktopLayout: React.FC<DesktopLayoutProps> = (props) => {
-    const { appData, setAppData, activeUser, onUpdateUser, onLogout, onUpdateUserEmail, syncStatus, profileData, setProfileData, pendingOrders, setPendingOrders, isVatEnabled, setIsVatEnabled, handleClearAllData, handleDeleteTable, onPremiumFeatureClick } = props;
+    const { appData, setAppData, activeUser, onUpdateUser, onLogout, onUpdateUserEmail, syncStatus, profileData, setProfileData, pendingOrders, setPendingOrders, isVatEnabled, setIsVatEnabled, handleClearAllData, handleDeleteTable, onDeleteUser, onPremiumFeatureClick } = props;
     
     const { 
         products = [], 
@@ -150,6 +152,54 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = (props) => {
         updateState('orders', orders.map(o => o.id === orderId ? { ...oldOrder, items: updatedItems, status, deliveryDate: logistics.date, deliveryTime: logistics.time, deliveryFee: (oldOrder.deliveryFee || 0) + logistics.newFee, grandTotal: (oldOrder.grandTotal || 0) + adjustment } : o));
     }, [orders, products, updateState]);
 
+    const handleExportData = useCallback(() => {
+        try {
+            const dataStr = JSON.stringify(appData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `empire-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            alert("Successfully downloaded! Now you can import it in another device and look at business report transactions and also can continue. Thank you!");
+        } catch (e) {
+            console.error("Export failed", e);
+            alert("Failed to export data.");
+        }
+    }, [appData]);
+
+    const handleImportData = useCallback(() => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = async (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const content = event.target?.result as string;
+                    const parsed = JSON.parse(content);
+                    if (parsed && typeof parsed === 'object') {
+                        const merged = mergeWithInitialData(parsed);
+                        setAppData(merged);
+                        alert("Data imported successfully!");
+                    } else {
+                        alert("Invalid backup file format.");
+                    }
+                } catch (err) {
+                    console.error("Import failed", err);
+                    alert("Failed to parse the backup file.");
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }, [setAppData]);
+
     const renderView = () => {
         const isDesktopView = true;
         switch(currentView) {
@@ -159,7 +209,7 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = (props) => {
             case MainView.EXPENSES: return <ExpensesScreen expenses={expenses} onAddClick={() => setModal('addExpense')} onEditClick={(e)=>{setExpenseToEdit(e); setModal('addExpense');}} onDeleteExpense={(id)=>updateState('expenses', expenses.filter(e=>e.id!==id))} businessProfile={profileData} onHome={goToDashboard} />;
             case MainView.PROFILE: return <ProfileScreen appData={appData} profileData={profileData} onBack={() => setCurrentView(MainView.DASHBOARD)} onLogout={onLogout} onEdit={() => setCurrentView(MainView.EDIT_PROFILE)} />;
             case MainView.EDIT_PROFILE: return <EditProfileScreen profileData={profileData} onCancel={() => setCurrentView(MainView.PROFILE)} onSave={(u, p) => { onUpdateUser(u); setProfileData(p); setCurrentView(MainView.PROFILE); }} activeUser={activeUser} />;
-            case MainView.SETTINGS: return <SettingsScreen isVatEnabled={isVatEnabled} onVatToggle={() => setIsVatEnabled(p => !p)} businessSettings={settings} onUpdateBusinessSettings={(s) => updateState('settings', s)} onExportData={()=>{}} onImportData={()=>{}} onLogout={onLogout} activeUser={activeUser} onUpdateUserSettings={(u)=>onUpdateUser({...activeUser,...u})} setCurrentView={setCurrentView} onClearAllData={handleClearAllData} businessProfile={profileData} onUpdateBusinessProfile={(p)=>setProfileData(p)} onPremiumFeatureClick={onPremiumFeatureClick} />;
+            case MainView.SETTINGS: return <SettingsScreen isVatEnabled={isVatEnabled} onVatToggle={() => setIsVatEnabled(p => !p)} businessSettings={settings} onUpdateBusinessSettings={(s) => updateState('settings', s)} onExportData={handleExportData} onImportData={handleImportData} onLogout={onLogout} activeUser={activeUser} onUpdateUserSettings={(u)=>onUpdateUser({...activeUser,...u})} setCurrentView={setCurrentView} onClearAllData={handleClearAllData} onDeleteUser={onDeleteUser} businessProfile={profileData} onUpdateBusinessProfile={(p)=>setProfileData(p)} onPremiumFeatureClick={onPremiumFeatureClick} />;
             case MainView.REPORTS: return <ReportsScreen orders={orders} expenses={expenses} products={products} payments={payments} onHome={goToDashboard} />;
             case MainView.ORDERS: return <OrdersScreen orders={orders} customers={customers} creditors={creditors} vendors={vendors} products={products} onViewBill={(o) => {}} onEditOrder={(o) => {}} onDeleteOrder={handleDeleteOrder} onUpdateStatus={handleUpdateOrderStatus} onCancelOrder={(id) => handleUpdateOrderStatus(id, 'Cancelled')} onAddNewOrder={() => setCurrentView(MainView.SALES)} businessProfile={profileData} onViewKots={(o) => {}} onHome={goToDashboard} onProcessAdvancedReturn={handleAdvancedReturn} />;
             case MainView.BILLS: return <BillsScreen orders={orders} expenses={expenses} isVatEnabled={isVatEnabled} businessProfile={profileData} onDeleteOrder={handleDeleteOrder} onDeleteExpense={handleDeleteExpense} activeUser={activeUser} onHome={goToDashboard} />;
