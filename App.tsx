@@ -5,7 +5,7 @@ import OnboardingScreen from './screens/OnboardingScreen';
 import PermissionScreen from './screens/PermissionScreen';
 import LoginScreen, { LocalCredentials } from './screens/LoginScreen';
 import MainScreen from './MainScreen'; 
-import { User, AppDataBackup } from './types';
+import { User, AppDataBackup, Theme } from './types';
 import AccountChooserScreen from './screens/AccountChooserScreen';
 import { loadDataFromDrive, GOOGLE_CLIENT_ID, GAPI_TOKEN_EXPIRED_ERROR } from './googleApi';
 import { getInitialData, loadLocalDataForUser, mergeWithInitialData, deleteLocalDataForUser } from './utils/dataUtils';
@@ -35,18 +35,20 @@ const AppContent: React.FC = () => {
     useEffect(() => {
         const root = window.document.documentElement;
         const applyInitialTheme = () => {
-            const savedTheme = localStorage.getItem('ob-pro-global-theme');
+            const savedTheme = localStorage.getItem('ob-pro-global-theme') as Theme | null;
             if (activeUser) return; // MainScreen will handle it
 
-            root.classList.remove('light', 'dark');
-            if (savedTheme === 'dark') {
+            root.classList.remove('light', 'dark', 'midnight', 'forest', 'sunset', 'ocean');
+            
+            let effectiveTheme: string = savedTheme || 'light';
+            if (savedTheme === 'system' || !savedTheme) {
+                effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            
+            root.classList.add(effectiveTheme);
+            
+            if (['dark', 'midnight', 'forest', 'sunset', 'ocean'].includes(effectiveTheme)) {
                 root.classList.add('dark');
-            } else if (savedTheme === 'system') {
-                const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                root.classList.add(systemTheme);
-            } else {
-                // Default to light for initial screens
-                root.classList.add('light');
             }
         };
         

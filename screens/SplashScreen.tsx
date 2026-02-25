@@ -28,7 +28,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, onComplete }) => {
     }, [onComplete]);
 
     return (
-        <div className="flex flex-col h-screen bg-white dark:bg-gray-950 overflow-hidden transition-colors relative">
+        <div className="flex flex-col h-[100dvh] bg-white dark:bg-gray-950 overflow-hidden transition-colors relative">
             {/* Phase 1: Centered Logo Branding - OB Pro */}
             <div className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-1000 transform ${phase === 'branding' ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`}>
                 <div className="relative inline-block text-center">

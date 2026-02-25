@@ -133,7 +133,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, setCurrentView, ac
                 className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-500 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                 onClick={onClose}
             />
-            <div className={`fixed top-0 left-0 h-full w-[85%] max-w-[340px] bg-[#F8F9FB] dark:bg-gray-900 z-50 shadow-2xl flex flex-col transition-transform duration-500 cubic-bezier(0.16,1,0.3,1) ${isOpen ? 'translate-x-0' : '-translate-x-full'} gpu-accelerated overflow-hidden`}>
+            <div className={`fixed top-0 left-0 h-[100dvh] w-[85%] max-w-[340px] bg-[#F8F9FB] dark:bg-gray-900 z-50 shadow-2xl flex flex-col transition-transform duration-500 cubic-bezier(0.16,1,0.3,1) ${isOpen ? 'translate-x-0' : '-translate-x-full'} gpu-accelerated overflow-hidden`}>
                 
                 {/* Paper Plane Animation Overlay */}
                 {animatePlane && (

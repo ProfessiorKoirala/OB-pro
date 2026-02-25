@@ -27,7 +27,7 @@ const GreetingScreen: React.FC<GreetingScreenProps> = ({ status, onFinish }) => 
     }, [onFinish, isSuccess]);
 
     return (
-        <div className="flex flex-col h-screen bg-white dark:bg-gray-950 overflow-hidden transition-colors relative">
+        <div className="flex flex-col h-[100dvh] bg-white dark:bg-gray-950 overflow-hidden transition-colors relative">
             <main className="flex-1 flex flex-col items-center justify-center px-8">
                 <div className={`flex flex-col items-center gap-12 transition-all duration-1000 ${start ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
                     <div className="flex flex-col items-center gap-8 text-center">

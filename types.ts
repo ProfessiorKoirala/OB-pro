@@ -1,4 +1,4 @@
-export type Theme = 'light' | 'dark' | 'system';
+export type Theme = 'light' | 'dark' | 'system' | 'midnight' | 'forest' | 'sunset' | 'ocean';
 
 export interface User {
   id: string;

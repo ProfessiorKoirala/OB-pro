@@ -140,14 +140,20 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
     useEffect(() => {
         const applyTheme = (theme: Theme) => {
             const root = window.document.documentElement;
-            root.classList.remove('light', 'dark');
+            root.classList.remove('light', 'dark', 'midnight', 'forest', 'sunset', 'ocean');
 
+            let effectiveTheme = theme;
             if (theme === 'system') {
-                const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                root.classList.add(systemTheme);
-            } else {
-                root.classList.add(theme);
+                effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
             }
+            
+            root.classList.add(effectiveTheme);
+            
+            // Add 'dark' class for custom dark themes to enable dark: utilities
+            if (['dark', 'midnight', 'forest', 'sunset', 'ocean'].includes(effectiveTheme)) {
+                root.classList.add('dark');
+            }
+
             // Save theme globally for initial screens
             localStorage.setItem('ob-pro-global-theme', theme);
         };

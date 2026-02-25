@@ -43,7 +43,7 @@ const PermissionScreen: React.FC<PermissionScreenProps> = ({ onResult }) => {
     };
 
     return (
-        <div className="h-screen flex flex-col bg-white dark:bg-gray-950 overflow-hidden transition-colors relative font-sans">
+        <div className="h-[100dvh] flex flex-col bg-white dark:bg-gray-950 overflow-hidden transition-colors relative font-sans">
             <header className="absolute top-10 left-10 z-20">
                 <div className="flex items-center gap-1.5 animate-fade-in">
                     <h1 className="text-3xl font-black text-black dark:text-white tracking-tighter leading-none italic uppercase">

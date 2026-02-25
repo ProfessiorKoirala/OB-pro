@@ -87,7 +87,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalLogin, onLocalSignUp, 
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900 transition-colors relative overflow-hidden">
+    <div className="h-[100dvh] flex flex-col bg-white dark:bg-gray-900 transition-colors relative overflow-hidden">
       {/* Header Branding */}
       <header className="flex justify-between items-center pt-10 px-8 shrink-0 z-20">
           <div className="flex items-center gap-1.5 animate-fade-in">

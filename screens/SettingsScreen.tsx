@@ -93,11 +93,15 @@ const ThemeSelector: React.FC<{ currentTheme: Theme, onSelect: (theme: Theme) =>
     const themes: { id: Theme; name: string; icon: React.ReactNode }[] = [
         { id: 'light', name: 'Light Mode', icon: <div className="w-6 h-6 rounded-full border bg-white shadow-sm" /> },
         { id: 'dark', name: 'Dark Mode', icon: <div className="w-6 h-6 rounded-full border bg-gray-900 shadow-sm" /> },
+        { id: 'midnight', name: 'Midnight Blue', icon: <div className="w-6 h-6 rounded-full border bg-[#0f172a] shadow-sm" /> },
+        { id: 'forest', name: 'Forest Green', icon: <div className="w-6 h-6 rounded-full border bg-[#064e3b] shadow-sm" /> },
+        { id: 'sunset', name: 'Sunset Red', icon: <div className="w-6 h-6 rounded-full border bg-[#450a0a] shadow-sm" /> },
+        { id: 'ocean', name: 'Ocean Deep', icon: <div className="w-6 h-6 rounded-full border bg-[#083344] shadow-sm" /> },
         { id: 'system', name: 'System Default', icon: <div className="w-6 h-6 rounded-full border bg-gradient-to-r from-white to-gray-900 shadow-sm" /> },
     ];
 
     return (
-        <div className="p-4 grid grid-cols-1 gap-2">
+        <div className="p-4 grid grid-cols-2 gap-3">
             {themes.map(theme => (
                 <button
                     key={theme.id}
@@ -106,9 +110,9 @@ const ThemeSelector: React.FC<{ currentTheme: Theme, onSelect: (theme: Theme) =>
                 >
                     <div className="flex items-center space-x-3">
                         {theme.icon}
-                        <span className="font-bold text-text-primary dark:text-gray-100">{theme.name}</span>
+                        <span className="font-bold text-xs text-text-primary dark:text-gray-100">{theme.name}</span>
                     </div>
-                    {currentTheme === theme.id && <CheckCircleIcon className="w-5 h-5 text-primary" />}
+                    {currentTheme === theme.id && <CheckCircleIcon className="w-4 h-4 text-primary" />}
                 </button>
             ))}
         </div>

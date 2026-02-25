@@ -88,7 +88,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
 
   return (
     <div 
-      className="h-screen flex flex-col bg-white dark:bg-gray-900 overflow-hidden transition-colors relative"
+      className="h-[100dvh] flex flex-col bg-white dark:bg-gray-900 overflow-hidden transition-colors relative"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}

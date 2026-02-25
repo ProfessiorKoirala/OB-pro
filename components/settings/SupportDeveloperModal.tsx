@@ -12,7 +12,8 @@ const SupportOption: React.FC<{
     name: string;
     detail: string;
     color: string;
-}> = ({ logo, name, detail, color }) => {
+    url: string;
+}> = ({ logo, name, detail, color, url }) => {
     const [copied, setCopied] = React.useState(false);
 
     const handleCopy = () => {
@@ -24,9 +25,15 @@ const SupportOption: React.FC<{
     return (
         <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 flex items-center justify-between group">
             <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-sm ${color}`}>
+                <a 
+                    href={url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-sm transition-transform active:scale-90 hover:scale-105 ${color}`}
+                    title={`Open ${name} App`}
+                >
                     {logo}
-                </div>
+                </a>
                 <div>
                     <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-0.5">{name}</p>
                     <p className="text-sm font-bold text-black dark:text-white font-mono">{detail}</p>
@@ -89,24 +96,28 @@ const SupportDeveloperModal: React.FC<SupportDeveloperModalProps> = ({ isOpen, o
                                     name="eSewa" 
                                     detail="9825953166" 
                                     color="bg-[#60bb46]" 
+                                    url="https://esewa.com.np"
                                     logo={<span className="font-black text-lg italic">e</span>} 
                                 />
                                 <SupportOption 
                                     name="Khalti" 
                                     detail="9825953166" 
                                     color="bg-[#5c2d91]" 
+                                    url="https://khalti.com"
                                     logo={<span className="font-black text-lg italic">K</span>} 
                                 />
                                 <SupportOption 
                                     name="NIC Asia Bank" 
                                     detail="C957032608052401" 
                                     color="bg-[#ed1c24]" 
+                                    url="https://www.nicasiabank.com"
                                     logo={<span className="font-black text-xs text-center leading-none">NIC<br/>ASIA</span>} 
                                 />
                                 <SupportOption 
                                     name="Nabil Bank" 
                                     detail="05010017515382" 
                                     color="bg-[#0054a6]" 
+                                    url="https://www.nabilbank.com"
                                     logo={<span className="font-black text-xs text-center leading-none">NABIL</span>} 
                                 />
                             </div>

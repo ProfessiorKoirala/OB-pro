@@ -31,7 +31,7 @@ const PasswordLoginScreen: React.FC<PasswordLoginScreenProps> = ({ user, onSucce
     };
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+        <div className="h-[100dvh] flex flex-col items-center justify-center bg-background p-4">
             <div className="w-full max-w-sm text-center">
                 <img src={user.profilePicUrl} alt={user.name} className="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-white shadow-lg" />
                 <h1 className="text-2xl font-bold text-text-primary">Welcome, {user.name.split(' ')[0]}</h1>

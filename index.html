@@ -20,13 +20,26 @@
               handwriting: ['Caveat', 'cursive'],
             },
             colors: {
-              primary: '#000000',
-              secondary: '#1F2937',
-              accent: '#2ECC71',
-              background: '#FFFFFF',
-              surface: '#F9FAFB',
-              'text-primary': '#111827',
-              'text-secondary': '#6B7280',
+              primary: 'rgb(var(--color-primary))',
+              secondary: 'rgb(var(--color-secondary))',
+              accent: 'rgb(var(--color-accent))',
+              background: 'rgb(var(--color-background))',
+              surface: 'rgb(var(--color-surface))',
+              'text-primary': 'rgb(var(--color-text-primary))',
+              'text-secondary': 'rgb(var(--color-text-secondary))',
+              gray: {
+                50: 'rgb(var(--gray-50))',
+                100: 'rgb(var(--gray-100))',
+                200: 'rgb(var(--gray-200))',
+                300: 'rgb(var(--gray-300))',
+                400: 'rgb(var(--gray-400))',
+                500: 'rgb(var(--gray-500))',
+                600: 'rgb(var(--gray-600))',
+                700: 'rgb(var(--gray-700))',
+                800: 'rgb(var(--gray-800))',
+                900: 'rgb(var(--gray-900))',
+                950: 'rgb(var(--gray-950))',
+              }
             },
             animation: {
               'fade-in': 'fadeIn 0.4s ease-out',
@@ -72,12 +85,72 @@
         --color-surface: 249, 250, 251;
         --color-text-primary: 17, 24, 39;
         --color-text-secondary: 107, 114, 128;
+        
+        --gray-50: 249, 250, 251;
+        --gray-100: 243, 244, 246;
+        --gray-200: 229, 231, 235;
+        --gray-300: 209, 213, 219;
+        --gray-400: 156, 163, 175;
+        --gray-500: 107, 114, 128;
+        --gray-600: 75, 85, 99;
+        --gray-700: 55, 65, 81;
+        --gray-800: 31, 41, 55;
+        --gray-900: 17, 24, 39;
+        --gray-950: 3, 7, 18;
       }
       .dark {
         --color-background: 17, 24, 39;
         --color-surface: 31, 41, 55;
         --color-text-primary: 249, 250, 251;
         --color-text-secondary: 156, 163, 175;
+        
+        --gray-800: 31, 41, 55;
+        --gray-900: 17, 24, 39;
+        --gray-950: 3, 7, 18;
+      }
+      .midnight {
+        --color-primary: 96, 165, 250;
+        --color-background: 15, 23, 42;
+        --color-surface: 30, 41, 59;
+        --color-text-primary: 241, 245, 249;
+        --color-text-secondary: 148, 163, 184;
+        
+        --gray-800: 30, 41, 59;
+        --gray-900: 15, 23, 42;
+        --gray-950: 8, 12, 24;
+      }
+      .forest {
+        --color-primary: 52, 211, 153;
+        --color-background: 6, 78, 59;
+        --color-surface: 20, 83, 45;
+        --color-text-primary: 236, 253, 245;
+        --color-text-secondary: 167, 243, 208;
+        
+        --gray-800: 20, 83, 45;
+        --gray-900: 6, 78, 59;
+        --gray-950: 2, 44, 34;
+      }
+      .sunset {
+        --color-primary: 251, 146, 60;
+        --color-background: 69, 10, 10;
+        --color-surface: 127, 29, 29;
+        --color-text-primary: 255, 247, 237;
+        --color-text-secondary: 253, 186, 116;
+        
+        --gray-800: 127, 29, 29;
+        --gray-900: 69, 10, 10;
+        --gray-950: 40, 5, 5;
+      }
+      .ocean {
+        --color-primary: 34, 211, 238;
+        --color-background: 8, 51, 68;
+        --color-surface: 21, 94, 117;
+        --color-text-primary: 236, 254, 255;
+        --color-text-secondary: 165, 243, 252;
+        
+        --gray-800: 21, 94, 117;
+        --gray-900: 8, 51, 68;
+        --gray-950: 4, 34, 46;
       }
 
       html, body, #root {
@@ -87,9 +160,11 @@
         scrollbar-gutter: stable;
       }
       
-      .dark body, .dark #root {
-        background-color: #111827;
-      }
+      .dark body, .dark #root { background-color: #111827; }
+      .midnight body, .midnight #root { background-color: #0f172a; }
+      .forest body, .forest #root { background-color: #064e3b; }
+      .sunset body, .sunset #root { background-color: #450a0a; }
+      .ocean body, .ocean #root { background-color: #083344; }
       
       body {
         overscroll-behavior-y: none;

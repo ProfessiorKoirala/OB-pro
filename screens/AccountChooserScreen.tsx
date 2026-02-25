@@ -12,7 +12,7 @@ interface AccountChooserScreenProps {
 
 const AccountChooserScreen: React.FC<AccountChooserScreenProps> = ({ users, onSelectAccount, onAddNewAccount, onDeleteAccount }) => {
   return (
-    <div className="min-h-screen flex flex-col bg-[#FFFFFF] dark:bg-gray-950 transition-colors relative overflow-hidden font-sans">
+    <div className="h-[100dvh] flex flex-col bg-[#FFFFFF] dark:bg-gray-950 transition-colors relative overflow-hidden font-sans">
         
         {/* Top Header: Branding Left, Navigation Right */}
         <header className="absolute top-0 left-0 right-0 z-30 px-8 pt-10 flex items-baseline justify-between">
