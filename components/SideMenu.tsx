@@ -150,7 +150,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, setCurrentView, ac
                     className="flex-1 overflow-y-auto px-2 pt-10 pb-10 no-scrollbar"
                 >
                     {/* Integrated User Profile: Swipes with other items - Updated Layout */}
-                    <div className="px-4 mb-8">
+                    <div className="px-4 mb-4">
                         <button 
                             onClick={() => navigate(MainView.PROFILE)}
                             className="w-full bg-white dark:bg-gray-800 p-6 rounded-[36px] flex items-center justify-between gap-4 shadow-sm border border-gray-100 dark:border-gray-700 active:scale-[0.98] transition-all text-left group"
@@ -167,6 +167,25 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, setCurrentView, ac
                                 />
                                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full shadow-sm"></div>
                             </div>
+                        </button>
+                    </div>
+
+                    {/* Quick Actions: Sign Out & Settings */}
+                    <div className="px-4 mb-6 flex items-center gap-2">
+                        <button 
+                            onClick={onLogout}
+                            className="flex-1 flex items-center gap-3 py-3 px-4 rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 group transition-all border border-transparent active:scale-95"
+                        >
+                            <LogoutIcon className="w-4 h-4 text-red-500" />
+                            <span className="text-[13px] font-bold text-red-600">Sign Out</span>
+                        </button>
+                        
+                        <button 
+                            onClick={() => navigate(MainView.SETTINGS)}
+                            className="flex-1 flex items-center gap-3 py-3 px-4 rounded-2xl bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all border border-gray-100 dark:border-gray-700 shadow-sm active:scale-95"
+                        >
+                            <SettingsIcon className="w-4 h-4 text-gray-500" />
+                            <span className="text-[13px] font-bold text-gray-700 dark:text-gray-300">Settings</span>
                         </button>
                     </div>
 
@@ -195,28 +214,8 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, setCurrentView, ac
                     ))}
                 </nav>
 
-                {/* Footer Section - Compact with Settings & Sign Out */}
-                <div className="px-4 pb-4 pt-3 border-t dark:border-gray-800 shrink-0 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm flex items-center gap-3">
-                    <button 
-                        onClick={onLogout}
-                        className="flex-1 flex items-center gap-4 py-3 px-4 rounded-[24px] active:bg-red-50 dark:active:bg-red-900/20 transition-all text-left border border-transparent active:border-red-100 dark:active:border-red-900/40"
-                    >
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-red-100 dark:bg-red-900/40 text-red-500 dark:text-red-400 shadow-sm">
-                            <LogoutIcon className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1">
-                            <p className="text-[15px] font-bold text-red-600 dark:text-red-400 leading-tight">Sign Out</p>
-                            <p className="text-[10px] text-red-300 dark:text-red-900/60 font-medium">End session</p>
-                        </div>
-                    </button>
-                    
-                    <button 
-                        onClick={() => navigate(MainView.SETTINGS)}
-                        className="w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 active:bg-gray-200 dark:active:bg-gray-700 active:text-black dark:active:text-white transition-all shadow-sm border border-gray-50 dark:border-gray-700 shrink-0"
-                    >
-                        <SettingsIcon className="w-6 h-6" />
-                    </button>
-                </div>
+                {/* Footer Section - Removed as they are now at the top */}
+                <div className="h-4 shrink-0" />
             </div>
             
             <style>{`

@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { Order, Creditor, Payment, BusinessProfile, Vendor, Purchase, VendorPayment, Staff, Attendance, Payroll, Holiday, BusinessSettings, Expense, Customer, Product, KOT } from '../types';
+import { Order, Creditor, Payment, BusinessProfile, Vendor, Purchase, VendorPayment, Staff, Attendance, Payroll, Holiday, BusinessSettings, Expense, Customer, Product, KOT, CashClosing } from '../types';
 import PrintableBill from '../components/PrintableBill';
 import PrintableCreditorStatement from '../components/PrintableCreditorStatement';
 import PrintableReport from '../components/PrintableReport';
@@ -15,14 +15,14 @@ import PrintableJoiningLetter from '../components/PrintableJoiningLetter';
 import PrintableDailyReport from '../components/PrintableDailyReport';
 import PrintableKOT from '../components/PrintableKOT';
 import PrintableTodayDeliveryManifest from '../components/tracker/PrintableTodayDeliveryManifest';
+import PrintableClosingReport from '../components/PrintableClosingReport';
 
 const renderAndPrint = (content: React.ReactElement, onPrintFinished?: () => void) => {
     const iframe = document.createElement('iframe');
-    // Some browsers ignore print() on 0x0 or display:none elements
     iframe.style.position = 'fixed';
     iframe.style.left = '-9999px';
     iframe.style.top = '0';
-    iframe.style.width = '800px'; // Give it some width
+    iframe.style.width = '800px';
     iframe.style.height = '600px';
     iframe.style.border = '0';
     iframe.style.visibility = 'hidden';
@@ -38,7 +38,6 @@ const renderAndPrint = (content: React.ReactElement, onPrintFinished?: () => voi
         return;
     }
 
-    // Set basic HTML structure and viewport
     printDocument.open();
     printDocument.write(`
         <!DOCTYPE html>
@@ -56,8 +55,6 @@ const renderAndPrint = (content: React.ReactElement, onPrintFinished?: () => voi
     printDocument.close();
 
     const head = printDocument.head;
-    
-    // Clone global styles and fonts into the print iframe
     document.head.querySelectorAll('link, style').forEach(el => {
         head.appendChild(el.cloneNode(true));
     });
@@ -73,14 +70,13 @@ const renderAndPrint = (content: React.ReactElement, onPrintFinished?: () => voi
     root.render(content);
 
     let attempts = 0;
-    const maxAttempts = 50; // ~5 seconds max wait
+    const maxAttempts = 50;
 
     const checkReadyAndPrint = async () => {
         attempts++;
         const images = printDocument.getElementsByTagName('img');
         const allLoaded = Array.from(images).every(img => img.complete);
         
-        // Wait for fonts to be ready if supported
         let fontsReady = true;
         try {
             if ((printDocument as any).fonts) {
@@ -91,16 +87,12 @@ const renderAndPrint = (content: React.ReactElement, onPrintFinished?: () => voi
         }
 
         if ((allLoaded && fontsReady) || attempts >= maxAttempts) {
-            // Minor delay for React layout pass
             setTimeout(() => {
                 try {
                     if (iframe.contentWindow) {
                         iframe.contentWindow.focus();
                         iframe.contentWindow.print();
                         
-                        // Cleanup sequence
-                        // On some mobile browsers, the print dialog is blocking, 
-                        // but on others it's not. We use a longer timeout for cleanup.
                         setTimeout(() => {
                             root.unmount();
                             if (iframe.parentElement) {
@@ -240,4 +232,8 @@ export const printKOT = (kot: KOT, businessProfile: BusinessProfile) => {
 
 export const printTodayDeliveryManifest = (manifestItems: any[], businessProfile: BusinessProfile) => {
     renderAndPrint(React.createElement(PrintableTodayDeliveryManifest, { items: manifestItems, businessProfile }));
+};
+
+export const printClosingReport = (closing: CashClosing, businessProfile: BusinessProfile) => {
+    renderAndPrint(React.createElement(PrintableClosingReport, { closing, businessProfile }));
 };

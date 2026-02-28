@@ -55,6 +55,8 @@ import ConfirmationModal from './components/ConfirmationModal';
 import WeatherScreen, { WeatherData } from './screens/WeatherScreen';
 import NotesScreen from './screens/NotesScreen';
 import StockReportScreen from './screens/StockReportScreen';
+import CashClosingScreen from './screens/CashClosingScreen';
+import { CashClosing, Denominations } from './types';
 
 type SyncStatus = 'Synced' | 'Syncing...' | 'Synced to Cloud & Device' | 'Synced to Cloud' | 'Saved to Device' | 'Saved to Browser' | 'Sync Failed';
 
@@ -127,7 +129,8 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
         trackers = initialData.trackers || [], 
         notes = initialData.notes || [], 
         noteCategories = initialData.noteCategories || [],
-        rosters = initialData.rosters || []
+        rosters = initialData.rosters || [],
+        cashClosings = initialData.cashClosings || []
     } = appData;
 
     const [currentView, setCurrentView] = useState<MainView>(MainView.DASHBOARD);
@@ -486,6 +489,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
             }
             case MainView.BILLS: return <BillsScreen orders={orders} expenses={expenses} isVatEnabled={settings.isVatEnabled} businessProfile={businessProfile} onDeleteOrder={handleDeleteOrder} onDeleteExpense={handleDeleteExpense} onHome={goToDashboard} activeUser={activeUser} />;
             case MainView.STOCK_REPORT: return <StockReportScreen orders={orders} products={products} purchases={purchases} businessProfile={businessProfile} onBack={() => setCurrentView(MainView.DASHBOARD)} onHome={goToDashboard} onUpdateProducts={(newProds) => updateState('products', newProds)} />;
+            case MainView.CASH_CLOSING: return <CashClosingScreen orders={orders} openingCash={settings.openingCash || 0} onCloseDay={(closing) => { updateState('cashClosings', [...cashClosings, closing]); updateSettings({ lastClosedDate: closing.date }); setCurrentView(MainView.DASHBOARD); alert("Day closed successfully. All transactions for today are now locked."); }} onHome={goToDashboard} businessProfile={businessProfile} lastClosing={cashClosings[cashClosings.length - 1]} />;
             default: return null;
         }
     };
@@ -505,7 +509,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
                     {isMenuOpen && <div className="absolute inset-0 z-50 rounded-[32px] cursor-pointer" onClick={() => setIsMenuOpen(false)} />}
                     <div className="relative h-full w-full overflow-hidden">
                         <div className={`flex h-full w-[400%] transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] gpu-accelerated ${!isSwipeableView ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ transform: `translate3d(-${swipeIndex * 25}%, 0, 0)` }}>
-                            <div className="w-1/4 h-full overflow-hidden"><DashboardScreen setIsMenuOpen={setIsMenuOpen} setCurrentView={setCurrentView} businessProfile={businessProfile} orders={orders} expenses={expenses} products={products} payments={payments} vendorPayments={vendorPayments} unreadNotificationCount={notifications.filter(n=>!n.read).length} onOpenNotifications={() => setIsNotificationsOpen(true)} settings={settings} /></div>
+                            <div className="w-1/4 h-full overflow-hidden"><DashboardScreen setIsMenuOpen={setIsMenuOpen} setCurrentView={setCurrentView} businessProfile={businessProfile} orders={orders} expenses={expenses} products={products} payments={payments} vendorPayments={vendorPayments} unreadNotificationCount={notifications.filter(n=>!n.read).length} onOpenNotifications={() => setIsNotificationsOpen(true)} settings={settings} onUpdateBusinessSettings={updateSettings} activeUser={activeUser} /></div>
                             <div className="w-1/4 h-full overflow-hidden"><SalesScreen products={products} tables={tables} creditors={creditors} customers={customers} vendors={vendors} deliveryPartners={deliveryPartners} onUpdateDeliveryPartners={(p)=>updateState('deliveryPartners', p)} discounts={discounts} isVatEnabled={settings.isVatEnabled} isKotEnabled={settings.isKotEnabled} onOrderComplete={handleOrderComplete} onUpdateTableStatus={(id, status) => updateState('tables', tables.map(t => t.id === id ? {...t, status} : t))} onSavePendingOrder={(o) => { setPendingOrders(prev => { const newMap = new Map(prev); const key = (o.type === 'Table' && o.tableId) ? o.tableId : o.id; newMap.set(key, o); return newMap; }); }} onPrintKot={(order) => { const kot: KOT = { id: `kot-${Date.now()}`, orderId: order.id, type: 'NEW', kotNumber: 1, timestamp: Date.now(), items: order.items.map(i => ({ name: i.product.name, quantity: i.quantity })), tableName: order.tableId ? tables.find(t => t.id === order.tableId)?.name : (order.type === 'Takeaway' ? 'Takeaway' : 'Delivery') }; printKOT(kot, businessProfile); }} onReprintLatestKot={() => {}} pendingOrders={pendingOrders} orders={orders} onAddProductClick={() => setModal('addProduct')} onAddTableClick={() => setModal('addTable')} businessProfile={businessProfile} onDeleteTable={(id)=>updateState('tables', tables.filter(t=>t.id!==id))} onEditorToggle={setEditorActive} onUpdateSettings={updateSettings} businessSettings={settings} onUpdateOrderStatus={handleUpdateOrderStatus} onHome={goToDashboard} /></div>
                             <div className="w-1/4 h-full overflow-hidden"><ExpensesScreen expenses={expenses} onAddClick={() => setModal('addExpense')} onEditClick={(e)=>{setExpenseToEdit(e); setModal('addExpense');}} onDeleteExpense={(id)=>updateState('expenses', expenses.filter(e=>e.id!==id))} businessProfile={businessProfile} onHome={goToDashboard} /></div>
                             <div className="w-1/4 h-full overflow-hidden">

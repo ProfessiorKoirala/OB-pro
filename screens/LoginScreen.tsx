@@ -3,6 +3,8 @@ import { User } from '../types';
 import GoogleIcon from '../components/icons/GoogleIcon';
 import EyeIcon from '../components/icons/EyeIcon';
 import EyeSlashIcon from '../components/icons/EyeSlashIcon';
+import { useGoogleLogin } from '@react-oauth/google';
+import { getSupabase } from '../src/supabase';
 
 export interface LocalCredentials {
   email: string;
@@ -62,27 +64,27 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalLogin, onLocalSignUp, 
   };
 
   const handleGoogleLogin = async () => {
+    const supabase = getSupabase();
+    if (!supabase) {
+      setError("Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment variables.");
+      return;
+    }
+
+    setLoading(true);
+    setError('');
     try {
-      const apiBase = (import.meta as any).env.VITE_API_URL || '';
-      const apiUrl = `${apiBase}/api/auth/google/url`;
-      console.log(`[Auth] Fetching Google Auth URL from: ${apiUrl}`);
-      const response = await fetch(apiUrl);
-      if (!response.ok) throw new Error(`Failed to get auth URL: ${response.status} ${response.statusText}`);
-      const { url } = await response.json();
-      
-      const width = 500;
-      const height = 600;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-      
-      window.open(
-        url,
-        'google_login',
-        `width=${width},height=${height},left=${left},top=${top}`
-      );
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          scopes: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) throw error;
     } catch (err) {
       console.error("Google login error:", err);
-      setError("Failed to start Google login. Please ensure the backend is running and APP_URL is configured correctly.");
+      setError("Failed to start Google login. Please check your Supabase configuration.");
+      setLoading(false);
     }
   };
 

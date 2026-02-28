@@ -165,7 +165,7 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
             <nav className="flex-1 overflow-y-auto no-scrollbar pt-10 pb-10">
                 
                 {/* Integrated User Profile */}
-                <div className="px-4 mb-8">
+                <div className="px-4 mb-4">
                     <button 
                         onClick={() => setCurrentView(MainView.PROFILE)}
                         className={`w-full bg-white dark:bg-gray-900 rounded-[36px] flex items-center gap-4 shadow-sm border border-gray-100 dark:border-gray-800 active:scale-[0.98] transition-all text-left group ${isCollapsed ? 'p-2 justify-center' : 'p-6 justify-between'}`}
@@ -184,6 +184,27 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
                             />
                             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
                         </div>
+                    </button>
+                </div>
+
+                {/* Quick Actions: Sign Out & Settings */}
+                <div className={`px-4 mb-6 flex items-center gap-2 ${isCollapsed ? 'flex-col px-2' : ''}`}>
+                    <button 
+                        onClick={onLogout}
+                        className={`flex items-center gap-2 py-2.5 px-4 rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 group transition-all border border-transparent active:scale-95 ${isCollapsed ? 'w-full justify-center' : 'flex-1'}`}
+                        title="Sign Out"
+                    >
+                        <LogoutIcon className="w-4 h-4 text-red-500" />
+                        {!isCollapsed && <span className="text-[13px] font-bold text-red-600">Sign Out</span>}
+                    </button>
+                    
+                    <button 
+                        onClick={() => setCurrentView(MainView.SETTINGS)}
+                        className={`flex items-center gap-2 py-2.5 px-4 rounded-2xl bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all border border-gray-100 dark:border-gray-800 shadow-sm active:scale-95 ${isCollapsed ? 'w-full justify-center' : 'flex-1'}`}
+                        title="Settings"
+                    >
+                        <SettingsIcon className="w-4 h-4 text-gray-500" />
+                        {!isCollapsed && <span className="text-[13px] font-bold text-gray-700 dark:text-gray-300">Settings</span>}
                     </button>
                 </div>
 
@@ -216,32 +237,8 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
                 ))}
             </nav>
 
-            {/* Footer Actions */}
-            <div className={`px-3 pb-6 pt-4 border-t dark:border-gray-900 shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md flex items-center gap-2 ${isCollapsed ? 'flex-col px-2' : ''}`}>
-                <div 
-                    onClick={onLogout}
-                    className={`flex items-center gap-3 py-3 px-3 rounded-[20px] cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 group transition-all ${isCollapsed ? 'justify-center w-full' : 'flex-1'}`}
-                    title="Sign Out"
-                >
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-red-100 dark:bg-red-900/30 text-red-500 shadow-sm group-hover:scale-110 transition-transform">
-                        <LogoutIcon className="w-5 h-5" />
-                    </div>
-                    {!isCollapsed && (
-                        <div className="flex-1 min-w-0">
-                            <p className="text-[14px] font-bold text-red-600 leading-tight">Sign Out</p>
-                            <p className="text-[9px] text-red-400 font-medium uppercase tracking-tighter">End session</p>
-                        </div>
-                    )}
-                </div>
-                
-                <button 
-                    onClick={() => setCurrentView(MainView.SETTINGS)}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition-all shadow-sm border border-gray-200 dark:border-gray-700 shrink-0 ${isCollapsed ? 'w-full rounded-2xl' : ''}`}
-                    title="Settings"
-                >
-                    <SettingsIcon className="w-6 h-6" />
-                </button>
-            </div>
+            {/* Footer Actions - Removed as they are now at the top */}
+            <div className="h-4 shrink-0" />
             <style>{`
                 .plane-path-animation {
                     position: absolute;

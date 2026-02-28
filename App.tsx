@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { GoogleOAuthProvider, CodeResponse } from '@react-oauth/google';
+import { getSupabase } from './src/supabase';
+import { Session } from '@supabase/supabase-js';
 import SplashScreen from './screens/SplashScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import PermissionScreen from './screens/PermissionScreen';
@@ -29,6 +31,62 @@ const AppContent: React.FC = () => {
     const [initialData, setInitialData] = useState<AppDataBackup | null>(null);
     const [loadingMessage, setLoadingMessage] = useState('Loading...');
     const [showPremiumScreen, setShowPremiumScreen] = useState(false);
+    const [supabaseSession, setSupabaseSession] = useState<Session | null>(null);
+
+    const handleSelectAccount = useCallback((user: User) => {
+        setAuthenticatingUser(user);
+        setSelectedAuthMethod(null);
+        setAppState('AUTHENTICATING_USER');
+    }, []);
+
+    const handleSupabaseSession = useCallback(async (session: Session) => {
+        const { user } = session;
+        const providerToken = session.provider_token;
+        
+        if (user && providerToken) {
+            const userId = `google-${user.id}`;
+            const gUser = {
+                id: userId,
+                name: user.user_metadata.full_name || user.email?.split('@')[0] || 'User',
+                email: user.email || '',
+                profilePicUrl: user.user_metadata.avatar_url || `https://i.pravatar.cc/150?u=${user.email}`,
+                accountType: 'google' as const,
+                accessToken: providerToken,
+            };
+
+            setUsers(prevUsers => {
+                const exists = prevUsers.some(u => u.id === userId);
+                const updatedUsers = exists
+                    ? prevUsers.map(u => u.id === userId ? { ...u, ...gUser } : u)
+                    : [...prevUsers, gUser];
+                localStorage.setItem('ob-pro-users', JSON.stringify(updatedUsers));
+                return updatedUsers;
+            });
+            
+            // If we are in AUTH state or CHOOSE_ACCOUNT, log them in automatically
+            if (appState === 'AUTH' || appState === 'LOADING') {
+                handleSelectAccount(gUser);
+            }
+        }
+    }, [appState, handleSelectAccount]);
+
+    // Handle Supabase Auth State
+    useEffect(() => {
+        const supabase = getSupabase();
+        if (!supabase) return;
+
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSupabaseSession(session);
+            if (session) handleSupabaseSession(session);
+        });
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSupabaseSession(session);
+            if (session) handleSupabaseSession(session);
+        });
+
+        return () => subscription.unsubscribe();
+    }, [handleSupabaseSession]);
     const [selectedAuthMethod, setSelectedAuthMethod] = useState<AuthMethod>(null);
     const [verificationResult, setVerificationResult] = useState<'SUCCESS' | 'FAILURE' | null>(null);
 
@@ -62,7 +120,11 @@ const AppContent: React.FC = () => {
         }
     }, [activeUser]);
 
-    const handleLogout = useCallback(() => {
+    const handleLogout = useCallback(async () => {
+        const supabase = getSupabase();
+        if (supabase) {
+            await supabase.auth.signOut();
+        }
         setActiveUser(null);
         setInitialData(null);
         setAuthenticatingUser(null);
@@ -167,11 +229,17 @@ const AppContent: React.FC = () => {
         }
     }, []);
 
-    const handleSelectAccount = useCallback((user: User) => {
-        setAuthenticatingUser(user);
-        setSelectedAuthMethod(null);
-        setAppState('AUTHENTICATING_USER');
-    }, []);
+    const handleLoginComplete = useCallback((user: User) => {
+        setUsers(prevUsers => {
+            const exists = prevUsers.some(u => u.id === user.id);
+            const updatedUsers = exists
+                ? prevUsers.map(u => u.id === user.id ? { ...u, ...user } : u)
+                : [...prevUsers, user];
+            localStorage.setItem('ob-pro-users', JSON.stringify(updatedUsers));
+            return updatedUsers;
+        });
+        handleSelectAccount(user);
+    }, [handleSelectAccount]);
 
     useEffect(() => {
         const handleMessage = async (event: MessageEvent) => {
@@ -377,7 +445,7 @@ const AppContent: React.FC = () => {
                 if (showPremiumScreen) return <PremiumFeatureScreen onBack={() => setShowPremiumScreen(false)} />;
                 return authState === 'CHOOSE_ACCOUNT' 
                     ? <AccountChooserScreen users={users} onSelectAccount={handleSelectAccount} onAddNewAccount={() => setAuthState('LOGIN_FORM')} onPremiumClick={() => setShowPremiumScreen(true)} onDeleteAccount={handleDeleteUser} />
-                    : <LoginScreen onLocalLogin={handleLocalLoginAttempt} onLocalSignUp={handleLocalSignUp} onGoogleSignInClick={() => setShowPremiumScreen(true)} onLoginComplete={()=>{}} onSignUpComplete={()=>{}} />;
+                    : <LoginScreen onLocalLogin={handleLocalLoginAttempt} onLocalSignUp={handleLocalSignUp} onGoogleSignInClick={() => setShowPremiumScreen(true)} onLoginComplete={handleLoginComplete} onSignUpComplete={handleLoginComplete} />;
             case 'AUTHENTICATING_USER':
                 if (!authenticatingUser) return <SplashScreen />;
                 if ((authenticatingUser.pinCode || authenticatingUser.enableBiometricLogin) && !selectedAuthMethod) {

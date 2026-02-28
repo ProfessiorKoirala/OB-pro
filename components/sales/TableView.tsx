@@ -201,6 +201,14 @@ const TableView: React.FC<TableViewProps> = (props) => {
 
     const [isPartnerManagerOpen, setIsPartnerManagerOpen] = useState(false);
     const [isAddPartnerModalOpen, setIsAddPartnerModalOpen] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredTables = useMemo(() => {
+        const query = searchQuery.toLowerCase().trim();
+        if (!query) return tables;
+        return tables.filter(t => t.name.toLowerCase().includes(query));
+    }, [tables, searchQuery]);
 
     const deliveryList = useMemo(() => {
         const registered = orders.filter(o => o.type === 'Order');
@@ -208,14 +216,30 @@ const TableView: React.FC<TableViewProps> = (props) => {
         const uniquePending = pendingOrders.filter(o => o.type === 'Order' && !registeredIds.has(o.id));
         const combined = [...uniquePending, ...registered];
         
-        return combined
-            .filter(o => o.status !== 'Completed' && o.status !== 'Returned' && o.status !== 'Cancelled')
+        const filtered = combined.filter(o => o.status !== 'Completed' && o.status !== 'Returned' && o.status !== 'Cancelled');
+        
+        const query = searchQuery.toLowerCase().trim();
+        if (!query) return filtered.sort((a, b) => b.timestamp - a.timestamp);
+        
+        return filtered
+            .filter(o => 
+                o.customerName?.toLowerCase().includes(query) || 
+                o.id.toLowerCase().includes(query) ||
+                o.customerPhone?.includes(query)
+            )
             .sort((a, b) => b.timestamp - a.timestamp);
-    }, [pendingOrders, orders]);
+    }, [pendingOrders, orders, searchQuery]);
 
     const takeawayDrafts = useMemo(() => {
-         return pendingOrders.filter(o => o.type === 'Takeaway');
-    }, [pendingOrders]);
+         const drafts = pendingOrders.filter(o => o.type === 'Takeaway');
+         const query = searchQuery.toLowerCase().trim();
+         if (!query) return drafts;
+         return drafts.filter(o => 
+            o.customerName?.toLowerCase().includes(query) || 
+            o.id.toLowerCase().includes(query) ||
+            o.customerPhone?.includes(query)
+         );
+    }, [pendingOrders, searchQuery]);
 
     const isTableOccupied = (tableId: string) => {
         const order = pendingOrders.find(o => o.tableId === tableId);
@@ -264,19 +288,40 @@ const TableView: React.FC<TableViewProps> = (props) => {
 
             <header className="px-6 pt-12 pb-6 sticky top-0 bg-white/90 dark:bg-gray-950/90 backdrop-blur-md z-20 shrink-0 border-b dark:border-gray-800">
                  <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <div className="flex items-center gap-1.5">
-                             <h1 className="text-3xl font-black text-black dark:text-white italic uppercase tracking-tighter leading-none">OB Sales</h1>
+                    {!isSearchOpen ? (
+                        <div className="animate-fade-in">
+                            <div className="flex items-center gap-1.5">
+                                 <h1 className="text-3xl font-black text-black dark:text-white italic uppercase tracking-tighter leading-none">OB Sales</h1>
+                            </div>
+                            <p className="text-[10px] font-black text-gray-300 dark:text-gray-600 uppercase tracking-[0.4em] mt-2 italic leading-none">Terminal Control</p>
                         </div>
-                        <p className="text-[10px] font-black text-gray-300 dark:text-gray-600 uppercase tracking-[0.4em] mt-2 italic leading-none">Terminal Control</p>
-                    </div>
+                    ) : (
+                        <div className="flex-1 animate-scale-in mr-4">
+                            <input 
+                                autoFocus
+                                type="text"
+                                placeholder={`Search ${activeSegment.toLowerCase()}...`}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-2xl py-3 px-6 text-sm font-bold focus:ring-2 focus:ring-black dark:focus:ring-white transition-all shadow-inner placeholder:text-gray-400 text-black dark:text-white"
+                            />
+                        </div>
+                    )}
                     <div className="flex items-center gap-2">
-                        {onHome && (
+                        {onHome && !isSearchOpen && (
                             <button onClick={onHome} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-black dark:hover:text-white transition-all shadow-sm">
                                 <HomeIcon className="w-5 h-5" />
                             </button>
                         )}
-                        <button className="p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl text-black dark:text-white active:scale-90 transition-all"><SearchIcon className="w-5 h-5" /></button>
+                        <button 
+                            onClick={() => {
+                                setIsSearchOpen(!isSearchOpen);
+                                if (isSearchOpen) setSearchQuery('');
+                            }}
+                            className={`p-3 rounded-2xl active:scale-90 transition-all ${isSearchOpen ? 'bg-black dark:bg-white text-white dark:text-black' : 'bg-gray-50 dark:bg-gray-800 text-black dark:text-white'}`}
+                        >
+                            <SearchIcon className="w-5 h-5" />
+                        </button>
                     </div>
                 </div>
 
@@ -333,7 +378,7 @@ const TableView: React.FC<TableViewProps> = (props) => {
 
                 {activeSegment === 'TABLES' && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mt-8 animate-fade-in pb-40">
-                        {tables.map(table => (
+                        {filteredTables.map(table => (
                             <TableCard 
                                 key={table.id} 
                                 table={table} 
@@ -342,15 +387,17 @@ const TableView: React.FC<TableViewProps> = (props) => {
                                 onDelete={(e) => { e.stopPropagation(); onDeleteTable(table.id); }}
                             />
                         ))}
-                        <button 
-                            onClick={onAddTableClick}
-                            className="p-5 rounded-[40px] border-2 border-dashed border-gray-200 dark:border-gray-800 flex flex-col items-center justify-center gap-3 group hover:border-black dark:hover:border-white transition-all h-44"
-                        >
-                            <div className="w-10 h-10 rounded-2xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-300 group-hover:text-black dark:group-hover:text-white transition-all shadow-sm">
-                                <AddIcon className="w-6 h-6" />
-                            </div>
-                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">New Table</span>
-                        </button>
+                        {!searchQuery && (
+                            <button 
+                                onClick={onAddTableClick}
+                                className="p-5 rounded-[40px] border-2 border-dashed border-gray-200 dark:border-gray-800 flex flex-col items-center justify-center gap-3 group hover:border-black dark:hover:border-white transition-all h-44"
+                            >
+                                <div className="w-10 h-10 rounded-2xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-300 group-hover:text-black dark:group-hover:text-white transition-all shadow-sm">
+                                    <AddIcon className="w-6 h-6" />
+                                </div>
+                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">New Table</span>
+                            </button>
+                        )}
                     </div>
                 )}
 

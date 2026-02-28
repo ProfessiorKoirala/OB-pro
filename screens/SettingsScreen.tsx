@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { BusinessSettings, User, MainView, Theme, BusinessProfile } from '../types';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { BusinessSettings, User, MainView, Theme, BusinessProfile, Denominations } from '../types';
 import PinSetupModal from '../components/PinSetupModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import KeyIcon from '../components/icons/KeyIcon';
@@ -29,6 +29,8 @@ import ChartIcon from '../components/icons/ChartIcon';
 import PrinterIcon from '../components/icons/PrinterIcon';
 import HeartIcon from '../components/icons/HeartIcon';
 import SupportDeveloperModal from '../components/settings/SupportDeveloperModal';
+import CashCounter from '@/components/sales/CashCounter';
+import CloseIcon from '../components/icons/CloseIcon';
 
 interface SettingsScreenProps {
     isVatEnabled: boolean;
@@ -138,6 +140,20 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
     const [isQrCodeExpanded, setIsQrCodeExpanded] = useState(false);
     const [activeModal, setActiveModal] = useState<'privacy' | 'roadmap' | 'safety' | 'support' | null>(null);
     const [biometricSupported, setBiometricSupported] = useState(false);
+    const [isOpeningCashModalOpen, setOpeningCashModalOpen] = useState(false);
+    const [isOpeningCashConfirmOpen, setOpeningCashConfirmOpen] = useState(false);
+    const [pendingOpeningCash, setPendingOpeningCash] = useState<number | null>(null);
+    const [tempDenominations, setTempDenominations] = useState<Denominations>({
+        '1000': 0, '500': 0, '100': 0, '50': 0, '20': 0, '10': 0, '5': 0, 'coins': 0
+    });
+
+    const calculatedOpeningCash = useMemo(() => {
+        return (Object.keys(tempDenominations) as Array<keyof Denominations>).reduce((acc, key) => {
+            const multiplier = key === 'coins' ? 1 : parseInt(key, 10);
+            return acc + (tempDenominations[key] * multiplier);
+        }, 0);
+    }, [tempDenominations]);
+
     const qrInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -249,6 +265,27 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
         onUpdateBusinessProfile({ ...businessProfile, paymentQR: '' });
     };
 
+    const handleSaveOpeningCashFromCount = () => {
+        setPendingOpeningCash(calculatedOpeningCash);
+        setOpeningCashConfirmOpen(true);
+        setOpeningCashModalOpen(false);
+    };
+
+    const confirmOpeningCash = () => {
+        if (pendingOpeningCash !== null) {
+            onUpdateBusinessSettings({ 
+                ...businessSettings, 
+                openingCash: pendingOpeningCash,
+                openingCashSetDate: new Date().toISOString().split('T')[0]
+            });
+            setPendingOpeningCash(null);
+            setOpeningCashConfirmOpen(false);
+        }
+    };
+
+    const today = new Date().toISOString().split('T')[0];
+    const isOpeningCashSetToday = businessSettings.openingCashSetDate === today;
+
     const isGoogleConnected = props.activeUser.accountType === 'google';
     const hasLocalAuth = (activeUser.accountType === 'local' && activeUser.password) || (activeUser.enablePinLogin && activeUser.pinCode);
     
@@ -314,6 +351,55 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
             {activeModal === 'roadmap' && <WhatsNextModal onClose={() => setActiveModal(null)} />}
             {activeModal === 'safety' && <ImportantNotesModal onClose={() => setActiveModal(null)} />}
             <SupportDeveloperModal isOpen={activeModal === 'support'} onClose={() => setActiveModal(null)} />
+
+            {isOpeningCashModalOpen && (
+                <div className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-950 w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up border border-gray-100 dark:border-gray-800">
+                        <header className="px-8 py-6 border-b dark:border-gray-900 flex justify-between items-center shrink-0">
+                            <div>
+                                <h2 className="text-xl font-black text-black dark:text-white uppercase tracking-tighter italic">Opening Cash Count</h2>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Calculate your starting float</p>
+                            </div>
+                            <button onClick={() => setOpeningCashModalOpen(false)} className="p-2 text-gray-400 hover:text-black dark:hover:text-white transition-colors">
+                                <CloseIcon className="w-6 h-6" />
+                            </button>
+                        </header>
+                        <div className="flex-1 overflow-y-auto p-8 no-scrollbar">
+                            <CashCounter 
+                                denominations={tempDenominations} 
+                                onChange={(key, val) => setTempDenominations(prev => ({ ...prev, [key]: val }))} 
+                            />
+                        </div>
+                        <footer className="px-8 py-6 border-t dark:border-gray-900 bg-gray-50/50 dark:bg-gray-900/50 flex items-center justify-between shrink-0">
+                            <div className="text-left">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Calculated</p>
+                                <p className="text-xl font-black text-blue-600">
+                                    ₹{calculatedOpeningCash.toLocaleString()}
+                                </p>
+                            </div>
+                            <button 
+                                onClick={handleSaveOpeningCashFromCount}
+                                className="px-8 py-4 bg-black dark:bg-white text-white dark:text-black font-black rounded-2xl text-xs uppercase tracking-[0.2em] active:scale-95 transition-all shadow-lg"
+                            >
+                                Apply to Float
+                            </button>
+                        </footer>
+                    </div>
+                </div>
+            )}
+
+            {isOpeningCashConfirmOpen && (
+                <ConfirmationModal 
+                    title="Confirm Opening Float"
+                    message={`Are you sure you want to set the opening float to ₹${pendingOpeningCash?.toLocaleString()}? This cannot be changed until tomorrow.`}
+                    onConfirm={confirmOpeningCash}
+                    onCancel={() => {
+                        setOpeningCashConfirmOpen(false);
+                        setPendingOpeningCash(null);
+                    }}
+                    confirmText="Set Float"
+                />
+            )}
 
             <header className="mb-6 animate-slide-down flex items-center justify-between">
                 <h1 className="text-3xl font-bold text-text-primary dark:text-gray-100">Settings</h1>
@@ -390,6 +476,30 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
                                 className="w-28 text-right font-semibold p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                                 placeholder="e.g. 5000"
                             />
+                        </SettingsRow>
+                        <SettingsRow icon={<LedgerIcon className="h-7 w-7" />} title="Opening Cash (Float)" subtitle={isOpeningCashSetToday ? "Float is locked for today" : `Starting cash: ${formatCurrency(businessSettings.openingCash || 0)}`}>
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => setOpeningCashModalOpen(true)}
+                                    disabled={isOpeningCashSetToday}
+                                    className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Calculate with Cash Count"
+                                >
+                                    <QrCodeIcon className="w-5 h-5" />
+                                </button>
+                                <input
+                                    type="number"
+                                    value={businessSettings.openingCash || ''}
+                                    disabled={isOpeningCashSetToday}
+                                    onChange={e => {
+                                        const val = parseInt(e.target.value, 10) || 0;
+                                        setPendingOpeningCash(val);
+                                        setOpeningCashConfirmOpen(true);
+                                    }}
+                                    className="w-28 text-right font-semibold p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    placeholder="e.g. 1000"
+                                />
+                            </div>
                         </SettingsRow>
                         <SettingsRow icon={<TagIcon className="h-7 w-7" />} title="Discounts & Offers" subtitle="Create and manage discounts" onClick={() => setCurrentView(MainView.DISCOUNTS)} />
                     </div>

@@ -167,6 +167,7 @@ export enum MainView {
   WEATHER = 'WEATHER',
   NOTES = 'NOTES',
   STOCK_REPORT = 'STOCK_REPORT',
+  CASH_CLOSING = 'CASH_CLOSING',
 }
 
 export interface Product {
@@ -343,6 +344,33 @@ export interface BusinessSettings {
     isKotEnabled: boolean;
     autoApplyProductOffers: boolean;
     dailySalesTarget?: number;
+    openingCash: number;
+    openingCashSetDate?: string; // ISO Date string YYYY-MM-DD
+    lastClosedDate?: string; // ISO Date string YYYY-MM-DD
+}
+
+export interface Denominations {
+    '1000': number;
+    '500': number;
+    '100': number;
+    '50': number;
+    '20': number;
+    '10': number;
+    '5': number;
+    'coins': number;
+}
+
+export interface CashClosing {
+    id: string;
+    date: string; // YYYY-MM-DD
+    timestamp: number;
+    openingCash: number;
+    expectedCash: number;
+    actualCash: number;
+    difference: number;
+    denominations: Denominations;
+    reason?: string;
+    closedBy: string;
 }
 
 export interface AppDataBackup {
@@ -374,6 +402,7 @@ export interface AppDataBackup {
     trackers: Tracker[];
     notes: Note[];
     noteCategories: NoteCategory[];
+    cashClosings: CashClosing[];
 }
 
 export type UnifiedContact = {

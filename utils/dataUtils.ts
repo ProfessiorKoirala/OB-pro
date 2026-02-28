@@ -21,6 +21,7 @@ const initialSettings: BusinessSettings = {
     isKotEnabled: false,
     autoApplyProductOffers: true,
     dailySalesTarget: 2000,
+    openingCash: 1000,
 };
 
 const initialBusinessProfile: BusinessProfile = {
@@ -81,6 +82,7 @@ export const getInitialData = (): AppDataBackup => ({
     trackers: [],
     notes: [],
     noteCategories: initialNoteCategories,
+    cashClosings: [],
 });
 
 export type SaveStatus = 'FILE_SYSTEM' | 'LOCAL_STORAGE' | 'LOCAL_STORAGE_FALLBACK';

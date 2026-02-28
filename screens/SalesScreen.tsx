@@ -57,6 +57,9 @@ const SalesScreen: React.FC<SalesScreenProps> = (props) => {
     const [activeOrder, setActiveOrder] = useState<Order | null>(orderToEdit || null);
     const [isCheckoutModalOpen, setCheckoutModalOpen] = useState(false);
 
+    const today = new Date().toISOString().split('T')[0];
+    const isDayClosed = businessSettings.lastClosedDate === today;
+
     useEffect(() => {
         if (orderToEdit) {
             setActiveOrder(orderToEdit);
@@ -197,7 +200,28 @@ const SalesScreen: React.FC<SalesScreenProps> = (props) => {
     };
 
     return (
-        <div className="h-full w-full bg-gray-50 dark:bg-gray-900 overflow-hidden">
+        <div className="h-full w-full bg-gray-50 dark:bg-gray-900 overflow-hidden relative">
+            {isDayClosed && (
+                <div className="absolute inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-6 text-center">
+                    <div className="bg-white dark:bg-gray-950 p-10 rounded-[48px] shadow-2xl max-w-sm w-full border border-gray-100 dark:border-gray-800 animate-slide-up">
+                        <div className="w-20 h-20 bg-red-50 dark:bg-red-900/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+                        <h2 className="text-2xl font-black text-black dark:text-white italic uppercase tracking-tighter mb-2">Terminal Locked</h2>
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-8 leading-relaxed">
+                            The day has been closed and reconciled. No further transactions are permitted until the next business day.
+                        </p>
+                        <button 
+                            onClick={onHome}
+                            className="w-full py-5 bg-black dark:bg-white text-white dark:text-black font-black rounded-[32px] text-xs uppercase tracking-[0.3em] active:scale-95 transition-all"
+                        >
+                            Return to Dashboard
+                        </button>
+                    </div>
+                </div>
+            )}
             {step === 'EDIT_ORDER' && activeOrder ? (
                 <div className="h-full flex flex-col">
                     {isCheckoutModalOpen && (
