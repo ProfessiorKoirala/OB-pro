@@ -12,6 +12,7 @@ import GoogleIcon from '../components/icons/GoogleIcon';
 import CloudIcon from '../components/icons/CloudIcon';
 import TagIcon from '../components/icons/TagIcon';
 import AuthenticationPromptModal from '../components/AuthenticationPromptModal';
+import PasswordSetupModal from '../components/PasswordSetupModal';
 import ColorSwatchIcon from '../components/icons/ColorSwatchIcon';
 import LedgerIcon from '../components/icons/LedgerIcon';
 import FolderIcon from '../components/icons/FolderIcon';
@@ -133,6 +134,7 @@ const daysOfWeek: (keyof BusinessSettings['workingDays'])[] = ['sunday', 'monday
 const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
     const { businessSettings, onUpdateBusinessSettings, activeUser, onUpdateUserSettings, setCurrentView, onClearAllData, onDeleteUser, businessProfile, onUpdateBusinessProfile, onPremiumFeatureClick, syncStatus, onForceSync } = props;
     const [isPinModalOpen, setPinModalOpen] = useState(false);
+    const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
     const [isLogoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
     const [clearDataStep, setClearDataStep] = useState(0);
@@ -191,6 +193,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
     const handlePinSet = (pin: string) => {
         onUpdateUserSettings({ pinCode: pin, enablePinLogin: true });
         setPinModalOpen(false);
+    };
+
+    const handlePasswordSet = (password: string) => {
+        onUpdateUserSettings({ password });
+        setPasswordModalOpen(false);
+        alert("Security password set successfully! You can now use it for sensitive actions.");
     };
 
     const handlePinToggle = (value: boolean) => {
@@ -310,6 +318,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
     return (
         <div className="p-4 pb-28 bg-background dark:bg-gray-900 min-h-full transition-colors">
             {isPinModalOpen && <PinSetupModal onClose={() => setPinModalOpen(false)} onPinSet={handlePinSet} />}
+            {isPasswordModalOpen && <PasswordSetupModal onClose={() => setPasswordModalOpen(false)} onPasswordSet={handlePasswordSet} />}
             {isLogoutConfirmOpen && (
                 <ConfirmationModal 
                     title="Confirm Logout"
@@ -426,16 +435,26 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
                  <SettingsCard title="Account & Sync">
                     <div className="border-t divide-y dark:border-gray-700 dark:divide-gray-700">
                         {isGoogleConnected ? (
-                            <SettingsRow
-                                icon={<CloudIcon className="h-7 w-7" />}
-                                title="Connected to Google"
-                                subtitle={props.activeUser.email}
-                            />
+                            <>
+                                <SettingsRow
+                                    icon={<CloudIcon className="h-7 w-7" />}
+                                    title="Connected to Google"
+                                    subtitle={props.activeUser.email}
+                                />
+                                <SettingsRow
+                                    icon={<CloudIcon className="h-7 w-7" />}
+                                    title="Sync to Google Drive"
+                                    subtitle="Only work for premium user if you are premium user Sync will work."
+                                    onClick={onPremiumFeatureClick}
+                                >
+                                    <Toggle enabled={false} onChange={() => {}} disabled={true} />
+                                </SettingsRow>
+                            </>
                         ) : (
                             <SettingsRow
                                 icon={<GoogleIcon className="h-7 w-7" />}
                                 title="Google Drive Sync"
-                                subtitle="Premium feature. Contact developer Sandesh Koirala: +977-9825953166"
+                                subtitle="Only work for premium user if you are premium user Sync will work."
                                 onClick={onPremiumFeatureClick}
                             >
                                 <span className="font-semibold text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">Premium</span>
@@ -446,6 +465,18 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
 
                  <SettingsCard title="Security">
                     <div className="border-t divide-y dark:border-gray-700 dark:divide-gray-700">
+                        {isGoogleConnected && (
+                            <SettingsRow 
+                                icon={<KeyIcon className="h-7 w-7" />} 
+                                title="Security Password" 
+                                subtitle={activeUser.password ? 'Password is set' : 'Set a password for sensitive actions'}
+                                onClick={() => setPasswordModalOpen(true)}
+                            >
+                                <div className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                    {activeUser.password ? 'Update' : 'Set'}
+                                </div>
+                            </SettingsRow>
+                        )}
                         <SettingsRow icon={<PinIcon className="h-7 w-7" />} title="PIN Login" subtitle={activeUser.pinCode ? 'PIN is set' : 'Quick login with a 4-digit PIN'}>
                             <Toggle enabled={!!activeUser.enablePinLogin} onChange={handlePinToggle} />
                         </SettingsRow>

@@ -24,7 +24,7 @@ async function startServer() {
   app.use(cookieParser());
 
   const getRedirectUri = (req: express.Request) => {
-    let baseUrl = process.env.APP_URL;
+    let baseUrl = process.env.APP_URL || process.env.VITE_APP_URL;
     if (!baseUrl) {
       const host = req.get('host');
       const protocol = req.headers['x-forwarded-proto'] || req.protocol;

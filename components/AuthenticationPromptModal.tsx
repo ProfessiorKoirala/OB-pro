@@ -31,7 +31,7 @@ const AuthenticationPromptModal: React.FC<AuthenticationPromptModalProps> = ({ u
     useEffect(() => {
         if (user.enablePinLogin && user.pinCode) {
             setAuthType('pin');
-        } else if (user.accountType === 'local' && user.password) {
+        } else if (user.password) {
             setAuthType('password');
         }
     }, [user]);

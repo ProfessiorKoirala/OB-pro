@@ -73,11 +73,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalLogin, onLocalSignUp, 
     setLoading(true);
     setError('');
     try {
+      const redirectUrl = (import.meta as any).env.VITE_APP_URL || window.location.origin;
+      console.log(`[Supabase Auth] Redirecting to: ${redirectUrl}`);
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           scopes: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
-          redirectTo: window.location.origin
+          redirectTo: redirectUrl
         }
       });
       if (error) throw error;

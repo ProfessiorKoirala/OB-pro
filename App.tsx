@@ -7,7 +7,7 @@ import OnboardingScreen from './screens/OnboardingScreen';
 import PermissionScreen from './screens/PermissionScreen';
 import LoginScreen, { LocalCredentials } from './screens/LoginScreen';
 import MainScreen from './MainScreen'; 
-import { User, AppDataBackup, Theme } from './types';
+import { User, AppDataBackup, Theme, BusinessProfile } from './types';
 import AccountChooserScreen from './screens/AccountChooserScreen';
 import { loadDataFromDrive, GOOGLE_CLIENT_ID, GAPI_TOKEN_EXPIRED_ERROR } from './googleApi';
 import { getInitialData, loadLocalDataForUser, mergeWithInitialData, deleteLocalDataForUser } from './utils/dataUtils';
@@ -15,10 +15,12 @@ import PinLoginScreen from './screens/PinLoginScreen';
 import PasswordLoginScreen from './screens/PasswordLoginScreen';
 import PremiumFeatureScreen from './screens/PremiumFeatureScreen';
 import AuthMethodChooserScreen from './screens/AuthMethodChooserScreen';
+import CompleteProfileScreen from './screens/CompleteProfileScreen';
+import AuthenticationPromptModal from './components/AuthenticationPromptModal';
 import GreetingScreen from './screens/GreetingScreen';
 import { authenticateBiometric } from './utils/biometricUtils';
 
-type AppState = 'LOADING' | 'ONBOARDING' | 'PERMISSION' | 'AUTH' | 'AUTHENTICATING_USER' | 'DATA_LOADING' | 'GREETING' | 'LOGGED_IN';
+type AppState = 'LOADING' | 'ONBOARDING' | 'PERMISSION' | 'AUTH' | 'AUTHENTICATING_USER' | 'DATA_LOADING' | 'GREETING' | 'LOGGED_IN' | 'COMPLETE_PROFILE';
 type AuthState = 'CHOOSE_ACCOUNT' | 'LOGIN_FORM';
 type AuthMethod = 'PIN' | 'PASSWORD' | 'BIOMETRIC' | null;
 
@@ -89,6 +91,7 @@ const AppContent: React.FC = () => {
     }, [handleSupabaseSession]);
     const [selectedAuthMethod, setSelectedAuthMethod] = useState<AuthMethod>(null);
     const [verificationResult, setVerificationResult] = useState<'SUCCESS' | 'FAILURE' | null>(null);
+    const [pendingDeletionUser, setPendingDeletionUser] = useState<User | null>(null);
 
     useEffect(() => {
         const root = window.document.documentElement;
@@ -211,9 +214,9 @@ const AppContent: React.FC = () => {
                 const userForAuth: User = {
                     ...(existingUser || {}),
                     id: userId,
-                    name: existingUser?.name || gUser.email.split('@')[0],
+                    name: existingUser?.name || gUser.name || gUser.email.split('@')[0],
                     email: gUser.email,
-                    profilePicUrl: existingUser?.profilePicUrl || `https://i.pravatar.cc/150?u=${gUser.email}`,
+                    profilePicUrl: existingUser?.profilePicUrl || gUser.picture || `https://i.pravatar.cc/150?u=${gUser.email}`,
                     accountType: 'google',
                     accessToken: accessToken,
                 };
@@ -259,9 +262,9 @@ const AppContent: React.FC = () => {
                         const userForAuth: User = {
                             ...(existingUser || {}),
                             id: userId,
-                            name: existingUser?.name || gUser.email.split('@')[0],
+                            name: existingUser?.name || gUser.name || gUser.email.split('@')[0],
                             email: gUser.email,
-                            profilePicUrl: existingUser?.profilePicUrl || `https://i.pravatar.cc/150?u=${gUser.email}`,
+                            profilePicUrl: existingUser?.profilePicUrl || gUser.picture || `https://i.pravatar.cc/150?u=${gUser.email}`,
                             accountType: 'google',
                             accessToken: accessToken,
                         };
@@ -346,10 +349,27 @@ const AppContent: React.FC = () => {
 
     const handleGreetingFinish = () => {
         if (verificationResult === 'SUCCESS') {
-            setAppState('LOGGED_IN');
+            if (activeUser && initialData) {
+                const isNewProfile = initialData.businessProfile.businessName === 'My Business' && !initialData.businessProfile.phone;
+                if (isNewProfile) {
+                    setAppState('COMPLETE_PROFILE');
+                } else {
+                    setAppState('LOGGED_IN');
+                }
+            } else {
+                setAppState('LOGGED_IN');
+            }
         } else {
             setAppState('AUTH');
             setVerificationResult(null);
+        }
+    };
+
+    const handleCompleteProfile = (updatedProfile: BusinessProfile) => {
+        if (initialData) {
+            const updatedData = { ...initialData, businessProfile: updatedProfile };
+            setInitialData(updatedData);
+            setAppState('LOGGED_IN');
         }
     };
 
@@ -387,11 +407,7 @@ const AppContent: React.FC = () => {
         }
     }, []);
 
-    const handleDeleteUser = useCallback((userId: string) => {
-        if (!window.confirm("Are you sure you want to delete this profile? This will permanently erase all business data associated with this account.")) {
-            return;
-        }
-
+    const performDeletion = useCallback((userId: string) => {
         setUsers(prevUsers => {
             const updatedUsers = prevUsers.filter(u => u.id !== userId);
             localStorage.setItem('ob-pro-users', JSON.stringify(updatedUsers));
@@ -416,7 +432,19 @@ const AppContent: React.FC = () => {
             setAuthenticatingUser(null);
             setAppState('AUTH');
         }
+        setPendingDeletionUser(null);
     }, [activeUser, authenticatingUser, handleLogout]);
+
+    const handleDeleteUser = useCallback((userId: string) => {
+        const userToDelete = users.find(u => u.id === userId);
+        if (!userToDelete) return;
+        
+        if (!window.confirm("Are you sure you want to delete this profile? This will permanently erase all business data associated with this account.")) {
+            return;
+        }
+        
+        setPendingDeletionUser(userToDelete);
+    }, [users]);
 
     const renderContent = () => {
         switch (appState) {
@@ -466,12 +494,40 @@ const AppContent: React.FC = () => {
                     return <MainScreen activeUser={activeUser} initialData={initialData} onLogout={handleLogout} onUpdateUser={handleUpdateUser} onUpdateUserEmail={handleUpdateUserEmail} onDeleteUser={handleDeleteUser} />;
                 }
                 return <SplashScreen />;
+            case 'COMPLETE_PROFILE':
+                if (activeUser && initialData) {
+                    return <CompleteProfileScreen user={activeUser} initialBusinessProfile={initialData.businessProfile} onComplete={handleCompleteProfile} />;
+                }
+                return <SplashScreen />;
             default:
                 return <SplashScreen />;
         }
     };
     
-    return <div className="h-full">{renderContent()}</div>;
+    return (
+        <div className="h-full">
+            {renderContent()}
+            {pendingDeletionUser && (
+                <AuthenticationPromptModal
+                    user={pendingDeletionUser}
+                    onConfirm={(credential) => {
+                        const authType = pendingDeletionUser.enablePinLogin && pendingDeletionUser.pinCode ? 'pin' : (pendingDeletionUser.accountType === 'local' ? 'password' : 'none');
+                        let isValid = false;
+                        if (authType === 'pin') isValid = credential === pendingDeletionUser.pinCode;
+                        else if (authType === 'password') isValid = credential === pendingDeletionUser.password;
+                        else if (authType === 'none') isValid = true; // Google account with no extra auth
+
+                        if (isValid) {
+                            performDeletion(pendingDeletionUser.id);
+                            return true;
+                        }
+                        return false;
+                    }}
+                    onClose={() => setPendingDeletionUser(null)}
+                />
+            )}
+        </div>
+    );
 };
 
 const App: React.FC = () => {
