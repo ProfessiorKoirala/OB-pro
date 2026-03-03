@@ -39,7 +39,7 @@ async function startServer() {
 
   // Google OAuth Endpoints
   app.get("/api/auth/google/url", (req, res) => {
-    const clientId = process.env.VITE_GOOGLE_CLIENT_ID || '536889580517-khp1pod4m36o47pbnfej97lhht3obon7.apps.googleusercontent.com';
+    const clientId = process.env.VITE_GOOGLE_CLIENT_ID || '';
     const redirectUri = getRedirectUri(req);
     
     const params = new URLSearchParams({
@@ -69,7 +69,7 @@ async function startServer() {
     }
 
     try {
-      const clientId = process.env.VITE_GOOGLE_CLIENT_ID || '536889580517-khp1pod4m36o47pbnfej97lhht3obon7.apps.googleusercontent.com';
+      const clientId = process.env.VITE_GOOGLE_CLIENT_ID || '';
       const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
       const redirectUri = getRedirectUri(req);
 

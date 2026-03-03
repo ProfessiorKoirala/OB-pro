@@ -1,7 +1,7 @@
 import { AppDataBackup } from "./types";
 
 // Using the Desktop/Installed App client ID for the loopback redirect flow needed for an .exe file.
-export const GOOGLE_CLIENT_ID = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || '536889580517-khp1pod4m36o47pbnfej97lhht3obon7.apps.googleusercontent.com';
+export const GOOGLE_CLIENT_ID = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || '';
 
 // --- SCOPES ---
 // drive.file: Per-file access to files created or opened by the app. The user can see these files in their Drive.
