@@ -5,4 +5,4 @@
 [build.environment]
   # Tell Netlify's secrets scanner to ignore these public client-side keys.
   # These are intentionally exposed to the client via VITE_ prefix.
-  SECRETS_SCAN_OMIT_KEYS = "VITE_GOOGLE_CLIENT_ID,VITE_SUPABASE_ANON_KEY,VITE_SUPABASE_URL"
+  SECRETS_SCAN_OMIT_KEYS = "VITE_GOOGLE_CLIENT_ID,VITE_SUPABASE_ANON_KEY,VITE_SUPABASE_URL,APP_URL"
