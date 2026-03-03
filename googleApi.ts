@@ -163,3 +163,35 @@ export async function saveDataToDrive(accessToken: string, data: AppDataBackup) 
         throw new Error(`Failed to save to Google Drive: ${message}`);
     }
 }
+
+/**
+ * Deletes the app data file 'mynagerData.json' from Google Drive.
+ * @param accessToken - The OAuth2 access token.
+ */
+export async function deleteDataFromDrive(accessToken: string): Promise<void> {
+    try {
+        const fileId = await getDriveFileId(accessToken);
+        if (!fileId) {
+            console.log("No file found in Drive to delete.");
+            return;
+        }
+
+        const response = await authorizedFetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+            method: 'DELETE',
+            headers: new Headers({ 'Authorization': `Bearer ${accessToken}` }),
+        });
+
+        if (response.status !== 204 && !response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            console.error("Google Drive API Error (deleteDataFromDrive):", errorBody);
+            throw errorBody;
+        }
+
+        console.log("✅ Data file deleted from Google Drive.");
+    } catch (err: any) {
+        if (err.message === GAPI_TOKEN_EXPIRED_ERROR) throw err;
+        const message = parseApiError(err);
+        console.error("Error deleting data from Drive:", message, err);
+        throw new Error(`❌ Failed to delete data from Drive: ${message}`);
+    }
+}

@@ -97,9 +97,10 @@ interface MainScreenProps {
     onUpdateUser: (updatedUser: User) => void;
     onUpdateUserEmail: (oldUserId: string, migratedUser: User) => void;
     onDeleteUser: (userId: string) => void;
+    onPremiumFeatureClick?: () => void;
 }
 
-const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogout, onUpdateUser, onUpdateUserEmail, onDeleteUser }) => {
+const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogout, onUpdateUser, onUpdateUserEmail, onDeleteUser, onPremiumFeatureClick }) => {
     const isDesktop = useMediaQuery('(min-width: 1024px)');
     const [appData, setAppData] = useState<AppDataBackup>(initialData);
 
@@ -431,7 +432,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
     const renderSecondaryView = () => {
         switch(currentView) {
             case MainView.ACCOUNTING: return <AccountingScreen orders={orders} expenses={expenses} payments={payments} creditors={creditors} products={products} businessProfile={businessProfile} onHome={goToDashboard} />;
-            case MainView.SETTINGS: return <SettingsScreen isVatEnabled={settings.isVatEnabled} onVatToggle={() => updateSettings({isVatEnabled: !settings.isVatEnabled})} businessSettings={settings} onUpdateBusinessSettings={updateSettings} onExportData={handleExportData} onImportData={handleImportData} onLogout={onLogout} activeUser={activeUser} onUpdateUserSettings={(u)=>onUpdateUser({...activeUser,...u})} setCurrentView={setCurrentView} onClearAllData={handleClearAllData} onDeleteUser={onDeleteUser} businessProfile={businessProfile} onUpdateBusinessProfile={(p)=>updateState('businessProfile', p)} syncStatus={syncStatus} onForceSync={handleForceSync} />;
+            case MainView.SETTINGS: return <SettingsScreen isVatEnabled={settings.isVatEnabled} onVatToggle={() => updateSettings({isVatEnabled: !settings.isVatEnabled})} businessSettings={settings} onUpdateBusinessSettings={updateSettings} onExportData={handleExportData} onImportData={handleImportData} onLogout={onLogout} activeUser={activeUser} onUpdateUserSettings={(u)=>onUpdateUser({...activeUser,...u})} setCurrentView={setCurrentView} onClearAllData={handleClearAllData} onDeleteUser={onDeleteUser} businessProfile={businessProfile} onUpdateBusinessProfile={(p)=>updateState('businessProfile', p)} syncStatus={syncStatus} onForceSync={handleForceSync} onPremiumFeatureClick={onPremiumFeatureClick} />;
             case MainView.PROFILE: return <ProfileScreen appData={appData} profileData={businessProfile} onBack={() => setCurrentView(MainView.DASHBOARD)} onLogout={onLogout} onEdit={() => setCurrentView(MainView.EDIT_PROFILE)} />;
             case MainView.EDIT_PROFILE: return <EditProfileScreen profileData={businessProfile} activeUser={activeUser} onCancel={() => setCurrentView(MainView.PROFILE)} onSave={(u, p) => { onUpdateUser(u); updateState('businessProfile', p); setCurrentView(MainView.PROFILE); }} />;
             case MainView.KOT_LIST: return <KotListScreen kots={kots || []} onBack={() => setCurrentView(MainView.DASHBOARD)} businessProfile={businessProfile} onHome={goToDashboard} />;

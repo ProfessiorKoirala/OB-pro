@@ -138,6 +138,11 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
     const [syncStatus, setSyncStatus] = useState<SyncStatus>('Synced');
     useDebouncedSave(appData, activeUser, setSyncStatus, onLogout);
 
+    const handleClearAllData = useCallback(() => {
+        setAppData(initialData);
+        alert("All data has been cleared. You can now start fresh.");
+    }, [initialData]);
+
     const updateState = useCallback((key: keyof AppDataBackup, value: any) => {
         setAppData(prev => ({ ...prev, [key]: value }));
     }, []);
@@ -456,7 +461,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
     const renderSecondaryView = () => {
         switch(currentView) {
             case MainView.ACCOUNTING: return <AccountingScreen orders={orders} expenses={expenses} payments={payments} creditors={creditors} products={products} businessProfile={businessProfile} onHome={goToDashboard} />;
-            case MainView.SETTINGS: return <SettingsScreen isVatEnabled={settings.isVatEnabled} onVatToggle={() => updateSettings({isVatEnabled: !settings.isVatEnabled})} businessSettings={settings} onUpdateBusinessSettings={updateSettings} onExportData={()=>{}} onImportData={()=>{}} onLogout={onLogout} activeUser={activeUser} onUpdateUserSettings={(u)=>onUpdateUser({...activeUser,...u})} setCurrentView={setCurrentView} onClearAllData={()=>{}} onDeleteUser={onDeleteUser} businessProfile={businessProfile} onUpdateBusinessProfile={(p)=>updateState('businessProfile', p)} />;
+            case MainView.SETTINGS: return <SettingsScreen isVatEnabled={settings.isVatEnabled} onVatToggle={() => updateSettings({isVatEnabled: !settings.isVatEnabled})} businessSettings={settings} onUpdateBusinessSettings={updateSettings} onExportData={()=>{}} onImportData={()=>{}} onLogout={onLogout} activeUser={activeUser} onUpdateUserSettings={(u)=>onUpdateUser({...activeUser,...u})} setCurrentView={setCurrentView} onClearAllData={handleClearAllData} onDeleteUser={onDeleteUser} businessProfile={businessProfile} onUpdateBusinessProfile={(p)=>updateState('businessProfile', p)} />;
             case MainView.PROFILE: return <ProfileScreen appData={appData} profileData={businessProfile} onBack={() => setCurrentView(MainView.DASHBOARD)} onLogout={onLogout} onEdit={() => setCurrentView(MainView.EDIT_PROFILE)} />;
             case MainView.EDIT_PROFILE: return <EditProfileScreen profileData={businessProfile} activeUser={activeUser} onCancel={() => setCurrentView(MainView.PROFILE)} onSave={(u, p) => { onUpdateUser(u); updateState('businessProfile', p); setCurrentView(MainView.PROFILE); }} />;
             case MainView.KOT_LIST: return <KotListScreen kots={kots || []} onBack={() => setCurrentView(MainView.DASHBOARD)} businessProfile={businessProfile} onHome={goToDashboard} />;
@@ -502,7 +507,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
     };
 
     if (isDesktop) {
-        return <DesktopLayout appData={appData} setAppData={setAppData} activeUser={activeUser} onUpdateUser={onUpdateUser} onLogout={onLogout} onUpdateUserEmail={onUpdateUserEmail} syncStatus={syncStatus} profileData={businessProfile} setProfileData={(p)=>updateState('businessProfile', p)} pendingOrders={pendingOrders} setPendingOrders={setPendingOrders} isVatEnabled={settings.isVatEnabled} setIsVatEnabled={(v)=>updateSettings({isVatEnabled: typeof v === 'function' ? v(settings.isVatEnabled) : v})} handleClearAllData={()=>{}} handleDeleteTable={()=>{}} onDeleteUser={onDeleteUser} />
+        return <DesktopLayout appData={appData} setAppData={setAppData} activeUser={activeUser} onUpdateUser={onUpdateUser} onLogout={onLogout} onUpdateUserEmail={onUpdateUserEmail} syncStatus={syncStatus} profileData={businessProfile} setProfileData={(p)=>updateState('businessProfile', p)} pendingOrders={pendingOrders} setPendingOrders={setPendingOrders} isVatEnabled={settings.isVatEnabled} setIsVatEnabled={(v)=>updateSettings({isVatEnabled: typeof v === 'function' ? v(settings.isVatEnabled) : v})} handleClearAllData={handleClearAllData} handleDeleteTable={()=>{}} onDeleteUser={onDeleteUser} />
     }
 
     const swipeableViews = [MainView.DASHBOARD, MainView.SALES, MainView.EXPENSES, MainView.INVENTORY];

@@ -9,7 +9,7 @@ import LoginScreen, { LocalCredentials } from './screens/LoginScreen';
 import MainScreen from './MainScreen'; 
 import { User, AppDataBackup, Theme, BusinessProfile } from './types';
 import AccountChooserScreen from './screens/AccountChooserScreen';
-import { loadDataFromDrive, GOOGLE_CLIENT_ID, GAPI_TOKEN_EXPIRED_ERROR } from './googleApi';
+import { loadDataFromDrive, deleteDataFromDrive, saveDataToDrive, GOOGLE_CLIENT_ID, GAPI_TOKEN_EXPIRED_ERROR } from './googleApi';
 import { getInitialData, loadLocalDataForUser, mergeWithInitialData, deleteLocalDataForUser } from './utils/dataUtils';
 import PinLoginScreen from './screens/PinLoginScreen';
 import PasswordLoginScreen from './screens/PasswordLoginScreen';
@@ -41,13 +41,32 @@ const AppContent: React.FC = () => {
         setAppState('AUTHENTICATING_USER');
     }, []);
 
+    const handleGoogleSync = useCallback(async () => {
+        const supabase = getSupabase();
+        if (!supabase) return;
+
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    scopes: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+                    redirectTo: window.location.origin
+                }
+            });
+            if (error) throw error;
+        } catch (err) {
+            console.error("Google sync error:", err);
+            alert("Failed to start Google sync. Please check your connection.");
+        }
+    }, []);
+
     const handleSupabaseSession = useCallback(async (session: Session) => {
         const { user } = session;
         const providerToken = session.provider_token;
         
         if (user && providerToken) {
             const userId = `google-${user.id}`;
-            const gUser = {
+            const gUser: User = {
                 id: userId,
                 name: user.user_metadata.full_name || user.email?.split('@')[0] || 'User',
                 email: user.email || '',
@@ -56,11 +75,42 @@ const AppContent: React.FC = () => {
                 accessToken: providerToken,
             };
 
+            // If we are currently logged in as a Local user, we are migrating
+            if (appState === 'LOGGED_IN' && activeUser?.accountType === 'local') {
+                const oldUserId = activeUser.id;
+                // Migrate data
+                if (initialData) {
+                    // Save to local for new user
+                    localStorage.setItem(`ob-pro-data-${userId}`, JSON.stringify(initialData));
+                    // Save to Drive for new user
+                    try {
+                        await saveDataToDrive(providerToken, initialData);
+                    } catch (err) {
+                        console.error("Failed to save data to Drive during migration:", err);
+                    }
+                }
+                
+                setUsers(prevUsers => {
+                    const existingUser = prevUsers.find(u => u.id === userId);
+                    const userForAuth = { ...(existingUser || {}), ...gUser };
+                    const updatedUsers = prevUsers.some(u => u.id === userId)
+                        ? prevUsers.map(u => (u.id === userId ? userForAuth : u))
+                        : [...prevUsers, userForAuth];
+                    localStorage.setItem('ob-pro-users', JSON.stringify(updatedUsers));
+                    return updatedUsers;
+                });
+
+                setActiveUser(gUser);
+                alert("Congratulations! You are now a premium user with Google Drive Sync enabled.");
+                return;
+            }
+
             setUsers(prevUsers => {
-                const exists = prevUsers.some(u => u.id === userId);
-                const updatedUsers = exists
-                    ? prevUsers.map(u => u.id === userId ? { ...u, ...gUser } : u)
-                    : [...prevUsers, gUser];
+                const existingUser = prevUsers.find(u => u.id === userId);
+                const userForAuth = { ...(existingUser || {}), ...gUser };
+                const updatedUsers = prevUsers.some(u => u.id === userId)
+                    ? prevUsers.map(u => (u.id === userId ? userForAuth : u))
+                    : [...prevUsers, userForAuth];
                 localStorage.setItem('ob-pro-users', JSON.stringify(updatedUsers));
                 return updatedUsers;
             });
@@ -70,7 +120,7 @@ const AppContent: React.FC = () => {
                 handleSelectAccount(gUser);
             }
         }
-    }, [appState, handleSelectAccount]);
+    }, [appState, activeUser, initialData, handleSelectAccount]);
 
     // Handle Supabase Auth State
     useEffect(() => {
@@ -407,7 +457,19 @@ const AppContent: React.FC = () => {
         }
     }, []);
 
-    const performDeletion = useCallback((userId: string) => {
+    const performDeletion = useCallback(async (userId: string) => {
+        const userToDelete = users.find(u => u.id === userId);
+        
+        // If it's a Google account, try to delete from Drive
+        if (userToDelete?.accountType === 'google' && userToDelete.accessToken) {
+            try {
+                await deleteDataFromDrive(userToDelete.accessToken);
+            } catch (err) {
+                console.error("Failed to delete data from Google Drive during profile deletion:", err);
+                // We proceed with local deletion anyway
+            }
+        }
+
         setUsers(prevUsers => {
             const updatedUsers = prevUsers.filter(u => u.id !== userId);
             localStorage.setItem('ob-pro-users', JSON.stringify(updatedUsers));
@@ -433,7 +495,7 @@ const AppContent: React.FC = () => {
             setAppState('AUTH');
         }
         setPendingDeletionUser(null);
-    }, [activeUser, authenticatingUser, handleLogout]);
+    }, [users, activeUser, authenticatingUser, handleLogout]);
 
     const handleDeleteUser = useCallback((userId: string) => {
         const userToDelete = users.find(u => u.id === userId);
@@ -491,7 +553,7 @@ const AppContent: React.FC = () => {
                     }} onBack={() => setAppState('AUTH')} onDeleteProfile={() => handleDeleteUser(authenticatingUser.id)} />;
             case 'LOGGED_IN':
                 if (activeUser && initialData) {
-                    return <MainScreen activeUser={activeUser} initialData={initialData} onLogout={handleLogout} onUpdateUser={handleUpdateUser} onUpdateUserEmail={handleUpdateUserEmail} onDeleteUser={handleDeleteUser} />;
+                    return <MainScreen activeUser={activeUser} initialData={initialData} onLogout={handleLogout} onUpdateUser={handleUpdateUser} onUpdateUserEmail={handleUpdateUserEmail} onDeleteUser={handleDeleteUser} onPremiumFeatureClick={handleGoogleSync} />;
                 }
                 return <SplashScreen />;
             case 'COMPLETE_PROFILE':

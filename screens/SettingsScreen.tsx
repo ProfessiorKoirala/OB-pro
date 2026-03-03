@@ -441,13 +441,17 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
                                     title="Connected to Google"
                                     subtitle={props.activeUser.email}
                                 />
+                                <div className="p-4 bg-green-50 dark:bg-green-900/10 border-y border-green-100 dark:border-green-900/20">
+                                    <p className="text-xs font-black text-green-600 dark:text-green-400 uppercase tracking-widest text-center">
+                                        You are a premium user, congratulations!
+                                    </p>
+                                </div>
                                 <SettingsRow
                                     icon={<CloudIcon className="h-7 w-7" />}
                                     title="Sync to Google Drive"
-                                    subtitle="Only work for premium user if you are premium user Sync will work."
-                                    onClick={onPremiumFeatureClick}
+                                    subtitle="Cloud sync is active for your account."
                                 >
-                                    <Toggle enabled={false} onChange={() => {}} disabled={true} />
+                                    <Toggle enabled={true} onChange={() => {}} disabled={true} />
                                 </SettingsRow>
                             </>
                         ) : (
