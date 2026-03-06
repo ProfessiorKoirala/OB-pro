@@ -10,6 +10,7 @@ import GlobalSearchModal from '../components/GlobalSearchModal';
 import { printDailyReport } from '../utils/printUtils';
 import AuthenticationPromptModal from '../components/AuthenticationPromptModal';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getSupabase } from '../src/supabase';
 
 interface DashboardScreenProps {
   setCurrentView: (view: MainView) => void;
@@ -59,7 +60,47 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     // --- BRANDING ANIMATION STATES ---
     const [proPop, setProPop] = useState(false);
     const [subIndex, setSubIndex] = useState(0);
+    const [hasNewUpdate, setHasNewUpdate] = useState(false);
     const subtitles = ['Empire', 'Terminal', 'Command'];
+
+    useEffect(() => {
+        const checkUpdates = async () => {
+            const supabase = getSupabase();
+            if (!supabase) return;
+            
+            try {
+                const { data } = await supabase
+                    .from('system_notifications')
+                    .select('createdAt')
+                    .order('createdAt', { ascending: false })
+                    .limit(1);
+                
+                if (data && data.length > 0) {
+                    const latestUpdate = new Date(data[0].createdAt).getTime();
+                    const lastSeen = Number(localStorage.getItem('last_seen_system_update') || 0);
+                    
+                    if (latestUpdate > lastSeen) {
+                        setHasNewUpdate(true);
+                    } else {
+                        setHasNewUpdate(false);
+                    }
+                }
+            } catch (err) {
+                console.error("Error checking updates:", err);
+            }
+        };
+        
+        checkUpdates();
+        
+        // Listen for storage events (triggered when navigating from other places)
+        window.addEventListener('storage', checkUpdates);
+        
+        const interval = setInterval(checkUpdates, 300000); // Check every 5 mins
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('storage', checkUpdates);
+        };
+    }, []);
 
     useEffect(() => {
         const popInterval = setInterval(() => {
@@ -276,23 +317,23 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 </div>
             )}
 
-            <header className="px-6 pt-12 pb-4 flex items-center justify-between sticky top-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md z-30 shrink-0 transition-colors">
+            <header className="px-6 pt-6 pb-3 flex items-center justify-between sticky top-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md z-30 shrink-0 transition-colors">
                 <div className="flex items-center gap-3">
                     {!isDesktop && (
-                        <button onClick={() => setIsMenuOpen(true)} className="flex items-center gap-2 group shrink-0 bg-gray-50 dark:bg-gray-800 p-1.5 rounded-2xl border border-gray-100 dark:border-gray-700 active:scale-95 transition-all">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button onClick={() => setIsMenuOpen(true)} className="flex items-center gap-2 group shrink-0 bg-gray-50 dark:bg-gray-800 p-1 rounded-xl border border-gray-100 dark:border-gray-700 active:scale-95 transition-all">
+                            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16" />
                                 </svg>
                             </div>
-                            <img src={businessProfile.profilePic || 'https://i.pravatar.cc/150'} className="w-8 h-8 rounded-lg object-cover border border-white dark:border-gray-600 shadow-sm" alt="profile" />
+                            <img src={businessProfile.profilePic || 'https://i.pravatar.cc/150'} className="w-7 h-7 rounded-lg object-cover border border-white dark:border-gray-600 shadow-sm" alt="profile" />
                         </button>
                     )}
                     <div>
                         <div className="flex items-center gap-1.5">
-                            <h1 className="text-2xl font-black text-black dark:text-white tracking-tighter leading-none italic uppercase">
+                            <h1 className="text-xl font-black text-black dark:text-white tracking-tighter leading-none italic uppercase">
                                 OB
-                                <span className={`ml-1 inline-block bg-black dark:bg-white text-white dark:text-black text-[9px] font-black px-2 py-0.5 rounded italic uppercase tracking-tighter shadow-sm relative overflow-hidden transition-all duration-500 ${proPop ? 'scale-125 rotate-3 bg-[#4B2A63] dark:bg-[#4B2A63] text-white ring-2 ring-purple-400' : ''}`}>
+                                <span className={`ml-1 inline-block bg-black dark:bg-white text-white dark:text-black text-[8px] font-black px-1.5 py-0.5 rounded italic uppercase tracking-tighter shadow-sm relative overflow-hidden transition-all duration-500 ${proPop ? 'scale-110 rotate-3 bg-[#4B2A63] dark:bg-[#4B2A63] text-white ring-2 ring-purple-400' : ''}`}>
                                     Pro
                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-shine-slow"></div>
                                 </span>
@@ -314,18 +355,41 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 </div>
                 <div className="flex items-center gap-2">
                     <button 
-                        onClick={() => setCurrentView(MainView.SYSTEM_NOTIFICATIONS)}
-                        className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full border border-blue-100 dark:border-blue-900/30 active:scale-95 transition-all"
+                        onClick={() => {
+                            const supabase = getSupabase();
+                            if (supabase) {
+                                supabase.from('system_notifications')
+                                    .select('createdAt')
+                                    .order('createdAt', { ascending: false })
+                                    .limit(1)
+                                    .then(({ data }) => {
+                                        if (data && data.length > 0) {
+                                            localStorage.setItem('last_seen_system_update', String(new Date(data[0].createdAt).getTime()));
+                                            setHasNewUpdate(false);
+                                        }
+                                    });
+                            }
+                            setCurrentView(MainView.SYSTEM_NOTIFICATIONS);
+                        }}
+                        className="hidden sm:flex items-center gap-2 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full border border-blue-100 dark:border-blue-900/30 active:scale-95 transition-all relative"
                     >
-                        <BellIcon className="w-3 h-3" />
-                        <span className="text-[9px] font-black uppercase tracking-widest">Updates</span>
+                        <div className="relative">
+                            <BellIcon className={`w-2.5 h-2.5 ${hasNewUpdate ? 'animate-bounce' : ''}`} />
+                            {hasNewUpdate && (
+                                <div className="absolute -top-6 -left-1 bg-blue-600 text-white text-[7px] font-black px-1 rounded-md animate-hi shadow-lg">
+                                    HI!
+                                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-600 rotate-45"></div>
+                                </div>
+                            )}
+                        </div>
+                        <span className="text-[8px] font-black uppercase tracking-widest">Updates</span>
                     </button>
-                    <button onClick={() => setIsSearchOpen(true)} className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-xl flex items-center justify-center text-black dark:text-white border border-gray-100 dark:border-gray-700 active:scale-90 transition-all">
-                        <SearchIcon className="w-5 h-5" />
+                    <button onClick={() => setIsSearchOpen(true)} className="w-8 h-8 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-black dark:text-white border border-gray-100 dark:border-gray-700 active:scale-90 transition-all">
+                        <SearchIcon className="w-4 h-4" />
                     </button>
-                    <button onClick={onOpenNotifications} className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-xl flex items-center justify-center text-black dark:text-white border border-gray-100 dark:border-gray-700 relative active:scale-90 transition-all">
-                        <BellIcon className="w-5 h-5" />
-                        {unreadNotificationCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-800"></span>}
+                    <button onClick={onOpenNotifications} className="w-8 h-8 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-black dark:text-white border border-gray-100 dark:border-gray-700 relative active:scale-90 transition-all">
+                        <BellIcon className="w-4 h-4" />
+                        {unreadNotificationCount > 0 && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full border-2 border-white dark:border-gray-800"></span>}
                     </button>
                 </div>
             </header>

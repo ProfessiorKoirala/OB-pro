@@ -18,6 +18,7 @@ import CalculatorScreen from './screens/CalculatorScreen';
 import BillsScreen from './screens/BillsScreen';
 import { CalendarScreen } from './screens/CalendarScreen';
 import AccountingScreen from './screens/AccountingScreen';
+import { getSupabase } from './src/supabase';
 import InventoryScreen from './screens/InventoryScreen';
 import AddEditProductModal from './components/inventory/AddEditProductModal';
 import AddEditStaffModal from './components/staff/AddEditStaffModal';
@@ -144,6 +145,21 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
 
     useEffect(() => {
         (window as any).navigateToSystemUpdates = () => {
+            // Clear the "new update" badge by updating the last seen timestamp
+            const supabase = getSupabase();
+            if (supabase) {
+                supabase.from('system_notifications')
+                    .select('createdAt')
+                    .order('createdAt', { ascending: false })
+                    .limit(1)
+                    .then(({ data }) => {
+                        if (data && data.length > 0) {
+                            localStorage.setItem('last_seen_system_update', String(new Date(data[0].createdAt).getTime()));
+                            // Dispatch a storage event so other components (like Dashboard) can update
+                            window.dispatchEvent(new Event('storage'));
+                        }
+                    });
+            }
             setCurrentView(MainView.SYSTEM_NOTIFICATIONS);
         };
         return () => {

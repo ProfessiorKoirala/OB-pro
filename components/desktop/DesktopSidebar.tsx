@@ -21,6 +21,8 @@ import CalculatorIcon from '../icons/CalculatorIcon';
 import SmsIcon from '../icons/SmsIcon';
 import PrinterIcon from '../icons/PrinterIcon';
 import ChartIcon from '../icons/ChartIcon';
+import BellIcon from '../icons/BellIcon';
+import { getSupabase } from '../../src/supabase';
 
 interface DesktopSidebarProps {
     activeUser: User;
@@ -50,8 +52,11 @@ const NavItem: React.FC<{
                 : 'hover:bg-gray-50 dark:hover:bg-gray-800'
             } ${isCollapsed ? 'justify-center px-0' : ''}`}
         >
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${iconColor} text-white shadow-sm`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${iconColor} text-white shadow-sm relative`}>
                 {React.cloneElement(icon as React.ReactElement<any>, { className: 'w-5 h-5' })}
+                {view === MainView.SYSTEM_NOTIFICATIONS && (icon as any).props.hasBadge && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
+                )}
             </div>
             {!isCollapsed && (
                 <div className="flex-1 min-w-0">
@@ -72,6 +77,34 @@ const Divider = () => <div className="mx-6 my-2 border-t border-dashed border-gr
 const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView, setCurrentView, onLogout, settings }) => {
     const [animatePlane, setAnimatePlane] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [hasNewUpdate, setHasNewUpdate] = useState(false);
+
+    useEffect(() => {
+        const checkUpdates = async () => {
+            const supabase = getSupabase();
+            if (!supabase) return;
+            try {
+                const { data } = await supabase
+                    .from('system_notifications')
+                    .select('createdAt')
+                    .order('createdAt', { ascending: false })
+                    .limit(1);
+                if (data && data.length > 0) {
+                    const latestUpdate = new Date(data[0].createdAt).getTime();
+                    const lastSeen = Number(localStorage.getItem('last_seen_system_update') || 0);
+                    if (latestUpdate > lastSeen) setHasNewUpdate(true);
+                    else setHasNewUpdate(false);
+                }
+            } catch (err) { console.error(err); }
+        };
+        checkUpdates();
+        window.addEventListener('storage', checkUpdates);
+        const interval = setInterval(checkUpdates, 300000);
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('storage', checkUpdates);
+        };
+    }, []);
 
     useEffect(() => {
         const triggerFlight = () => {
@@ -116,6 +149,7 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
         { view: MainView.TRACKER, label: 'Fleets Tracker', subLabel: 'Logistics · Delivery Status', icon: <TruckIcon />, color: 'bg-indigo-400' },
         { view: MainView.NOTES, label: 'Personal Notes', subLabel: 'Drafts · Manuals · To-do', icon: <LedgerIcon />, color: 'bg-yellow-600' },
         { view: MainView.WEATHER, label: 'Weather Hub', subLabel: 'Local Business Conditions', icon: <CalendarIcon />, color: 'bg-orange-400' },
+        { view: MainView.SYSTEM_NOTIFICATIONS, label: 'System Updates', subLabel: 'News · Alerts · Features', icon: <BellIcon hasBadge={hasNewUpdate} /> as any, color: 'bg-blue-600' },
         { view: MainView.HISTORICAL_DATA_ENTRY, label: 'Daybook Entry', subLabel: 'Manual Record Digitization', icon: <LedgerIcon />, color: 'bg-stone-500' },
         { view: MainView.CALCULATOR, label: 'Calculator', subLabel: 'Quick Arithmetic Utility', icon: <CalculatorIcon />, color: 'bg-zinc-500' },
         { view: MainView.RECYCLE_BIN, label: 'Recycle Bin', subLabel: 'Recover Deleted Items', icon: <TrashIcon />, color: 'bg-red-400' },
@@ -132,6 +166,26 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
         { title: 'Management', items: managementItems },
         { title: 'Utilities', items: utilityItems },
     ];
+
+    const handleSetView = (view: MainView) => {
+        if (view === MainView.SYSTEM_NOTIFICATIONS) {
+            const supabase = getSupabase();
+            if (supabase) {
+                supabase.from('system_notifications')
+                    .select('createdAt')
+                    .order('createdAt', { ascending: false })
+                    .limit(1)
+                    .then(({ data }) => {
+                        if (data && data.length > 0) {
+                            localStorage.setItem('last_seen_system_update', String(new Date(data[0].createdAt).getTime()));
+                            setHasNewUpdate(false);
+                            window.dispatchEvent(new Event('storage'));
+                        }
+                    });
+            }
+        }
+        setCurrentView(view);
+    };
 
     return (
         <aside className={`bg-[#F8F9FB] dark:bg-gray-950 transition-all duration-300 border-r dark:border-gray-800 flex flex-col relative ${isCollapsed ? 'w-24' : 'w-[310px]'}`}>
@@ -167,7 +221,7 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
                 {/* Integrated User Profile */}
                 <div className="px-4 mb-4">
                     <button 
-                        onClick={() => setCurrentView(MainView.PROFILE)}
+                        onClick={() => handleSetView(MainView.PROFILE)}
                         className={`w-full bg-white dark:bg-gray-900 rounded-[36px] flex items-center gap-4 shadow-sm border border-gray-100 dark:border-gray-800 active:scale-[0.98] transition-all text-left group ${isCollapsed ? 'p-2 justify-center' : 'p-6 justify-between'}`}
                     >
                         {!isCollapsed && (
@@ -199,7 +253,7 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
                     </button>
                     
                     <button 
-                        onClick={() => setCurrentView(MainView.SETTINGS)}
+                        onClick={() => handleSetView(MainView.SETTINGS)}
                         className={`flex items-center gap-2 py-2.5 px-4 rounded-2xl bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all border border-gray-100 dark:border-gray-800 shadow-sm active:scale-95 ${isCollapsed ? 'w-full justify-center' : 'flex-1'}`}
                         title="Settings"
                     >
@@ -223,7 +277,7 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
                                     key={item.view} 
                                     view={item.view}
                                     currentView={currentView}
-                                    setCurrentView={setCurrentView}
+                                    setCurrentView={handleSetView}
                                     label={item.label}
                                     subLabel={item.subLabel}
                                     icon={item.icon}

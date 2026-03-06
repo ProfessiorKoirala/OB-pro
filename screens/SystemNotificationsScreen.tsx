@@ -126,7 +126,7 @@ const SystemNotificationsScreen: React.FC<SystemNotificationsScreenProps> = ({ o
                             <BellIcon className="w-12 h-12 text-gray-200 dark:text-gray-800" />
                         </div>
                         <div className="space-y-1">
-                            <h3 className="text-lg font-black text-black dark:text-white tracking-tight">No Updates Yet</h3>
+                            <h3 className="text-lg font-black text-black dark:text-white tracking-tight">Currently no updates are available</h3>
                             <p className="text-sm text-gray-400 font-medium">You're all caught up with the latest news.</p>
                         </div>
                     </div>

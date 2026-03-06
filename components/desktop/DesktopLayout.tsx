@@ -45,6 +45,7 @@ import NotesScreen from '../../screens/NotesScreen';
 import NotificationsDrawer from '../notifications/NotificationsDrawer';
 import AddContactModal from '../communications/AddContactModal';
 import StockReportScreen from '../../screens/StockReportScreen';
+import SystemNotificationsScreen from '../../screens/SystemNotificationsScreen';
 
 interface DesktopLayoutProps {
     appData: AppDataBackup;
@@ -249,6 +250,7 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = (props) => {
             case MainView.HISTORICAL_DATA_ENTRY: return <HistoricalDataEntryScreen onBack={() => setCurrentView(MainView.SETTINGS)} onAddHistoricalOrder={(o)=>updateState('orders', [...orders, o])} onAddHistoricalExpense={(e)=>updateState('expenses', [...expenses, {...e, id:`exp-${Date.now()}`}])} onAddHistoricalPurchase={(p)=>updateState('purchases', [...purchases, {...p, id:`pur-${Date.now()}`}])} vendors={vendors} products={products} isDesktop={isDesktopView} />;
             case MainView.CALENDAR: return <CalendarScreen orders={orders} expenses={expenses} payments={payments} reminders={reminders} creditors={creditors} onAddReminder={()=>{}} settings={settings} holidays={holidays} onAddHoliday={()=>{}} onDeleteReminder={()=>{}} onDeleteHoliday={()=>{}} onHome={goToDashboard} isDesktop={isDesktopView} />;
             case MainView.STOCK_REPORT: return <StockReportScreen orders={orders} products={products} purchases={purchases} onBack={() => setCurrentView(MainView.DASHBOARD)} onHome={goToDashboard} onUpdateProducts={(newProds) => updateState('products', newProds)} />;
+            case MainView.SYSTEM_NOTIFICATIONS: return <SystemNotificationsScreen onBack={() => setCurrentView(MainView.DASHBOARD)} />;
             default: return <DashboardScreen isDesktop={isDesktopView} setCurrentView={setCurrentView} businessProfile={profileData} orders={orders} payments={payments} expenses={expenses} products={products} setIsMenuOpen={() => {}} unreadNotificationCount={notifications.filter(n=>!n.read).length} onOpenNotifications={() => setIsNotificationsOpen(true)} settings={settings} vendorPayments={vendorPayments} />;
         }
     };
