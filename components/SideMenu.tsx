@@ -20,6 +20,7 @@ import LedgerIcon from './icons/LedgerIcon';
 import TagIcon from './icons/TagIcon';
 import HomeIcon from './icons/HomeIcon';
 import LogoutIcon from './icons/LogoutIcon';
+import BellIcon from './icons/BellIcon';
 
 interface SideMenuProps {
     isOpen: boolean;
@@ -117,6 +118,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, setCurrentView, ac
                 { view: MainView.TRACKER, label: 'Fleets Tracker', subLabel: 'Logistics · Delivery Status', icon: <TruckIcon />, color: 'bg-indigo-400' },
                 { view: MainView.NOTES, label: 'Personal Notes', subLabel: 'Drafts · Manuals · To-do', icon: <LedgerIcon />, color: 'bg-yellow-600' },
                 { view: MainView.WEATHER, label: 'Weather Hub', subLabel: 'Local Business Conditions', icon: <CalendarIcon />, color: 'bg-orange-400' },
+                { view: MainView.SYSTEM_NOTIFICATIONS, label: 'System Updates', subLabel: 'News · Alerts · Features', icon: <BellIcon />, color: 'bg-blue-600' },
                 { view: MainView.CALCULATOR, label: 'Calculator', subLabel: 'Quick Arithmetic Utility', icon: <CalculatorIcon />, color: 'bg-zinc-500' },
                 { view: MainView.RECYCLE_BIN, label: 'Recycle Bin', subLabel: 'Recover Deleted Items', icon: <TrashIcon />, color: 'bg-red-400' },
             ]

@@ -102,14 +102,39 @@ const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({ isOpen, notif
                     <button onClick={onClose} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full"><CloseIcon className="h-6 w-6" /></button>
                 </header>
                 
-                <div className="p-2 border-b flex justify-between items-center shrink-0 bg-white">
-                    <button onClick={onMarkAllAsRead} className="flex items-center space-x-1.5 text-sm text-primary font-semibold p-2 rounded-lg hover:bg-primary/10">
-                        <CheckAllIcon className="h-5 w-5" />
-                        <span>Mark All as Read</span>
-                    </button>
-                     <button onClick={onClearAll} className="flex items-center space-x-1.5 text-sm text-red-600 font-semibold p-2 rounded-lg hover:bg-red-50">
-                        <TrashIcon className="h-5 w-5" />
-                        <span>Clear All</span>
+                <div className="p-2 border-b flex flex-col gap-2 shrink-0 bg-white">
+                    <div className="flex justify-between items-center">
+                        <button onClick={onMarkAllAsRead} className="flex items-center space-x-1.5 text-sm text-primary font-semibold p-2 rounded-lg hover:bg-primary/10">
+                            <CheckAllIcon className="h-5 w-5" />
+                            <span>Mark All as Read</span>
+                        </button>
+                        <button onClick={onClearAll} className="flex items-center space-x-1.5 text-sm text-red-600 font-semibold p-2 rounded-lg hover:bg-red-50">
+                            <TrashIcon className="h-5 w-5" />
+                            <span>Clear All</span>
+                        </button>
+                    </div>
+                    
+                    <button 
+                        onClick={() => {
+                            // We need a way to navigate from here. 
+                            // Since this is a drawer, we'll close it and let the parent handle navigation.
+                            onClose();
+                            (window as any).navigateToSystemUpdates?.();
+                        }}
+                        className="w-full flex items-center justify-between p-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-2xl transition-all group"
+                    >
+                        <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                                <BellIcon className="w-4 h-4" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-xs font-black uppercase tracking-widest leading-none">System Updates</p>
+                                <p className="text-[9px] font-bold opacity-60 uppercase tracking-tighter mt-1">News · Alerts · Features</p>
+                            </div>
+                        </div>
+                        <svg className="w-4 h-4 opacity-40 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" />
+                        </svg>
                     </button>
                 </div>
                 

@@ -313,6 +313,13 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <button 
+                        onClick={() => setCurrentView(MainView.SYSTEM_NOTIFICATIONS)}
+                        className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full border border-blue-100 dark:border-blue-900/30 active:scale-95 transition-all"
+                    >
+                        <BellIcon className="w-3 h-3" />
+                        <span className="text-[9px] font-black uppercase tracking-widest">Updates</span>
+                    </button>
                     <button onClick={() => setIsSearchOpen(true)} className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-xl flex items-center justify-center text-black dark:text-white border border-gray-100 dark:border-gray-700 active:scale-90 transition-all">
                         <SearchIcon className="w-5 h-5" />
                     </button>

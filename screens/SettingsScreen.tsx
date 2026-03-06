@@ -235,13 +235,15 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
     }
 
     const handleAuthAndClear = (credential: string): boolean => {
-        const authType = activeUser.enablePinLogin && activeUser.pinCode ? 'pin' : (activeUser.accountType === 'local' ? 'password' : 'none');
+        const authType = (activeUser.enablePinLogin && activeUser.pinCode) ? 'pin' : (activeUser.password ? 'password' : 'none');
 
         let isValid = false;
         if (authType === 'pin') {
             isValid = credential === activeUser.pinCode;
         } else if (authType === 'password') {
             isValid = credential === activeUser.password;
+        } else if (authType === 'none') {
+            isValid = true;
         }
 
         if (isValid) {
@@ -295,7 +297,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
     const isOpeningCashSetToday = businessSettings.openingCashSetDate === today;
 
     const isGoogleConnected = props.activeUser.accountType === 'google';
-    const hasLocalAuth = (activeUser.accountType === 'local' && activeUser.password) || (activeUser.enablePinLogin && activeUser.pinCode);
+    const hasLocalAuth = isGoogleConnected || !!activeUser.password || (activeUser.enablePinLogin && !!activeUser.pinCode);
     
     const qrCodeAction = (
         <button

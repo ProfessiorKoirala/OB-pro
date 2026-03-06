@@ -7,7 +7,7 @@ import OnboardingScreen from './screens/OnboardingScreen';
 import PermissionScreen from './screens/PermissionScreen';
 import LoginScreen, { LocalCredentials } from './screens/LoginScreen';
 import MainScreen from './MainScreen'; 
-import { User, AppDataBackup, Theme, BusinessProfile } from './types';
+import { User, AppDataBackup, Theme, BusinessProfile, Promotion } from './types';
 import AccountChooserScreen from './screens/AccountChooserScreen';
 import { loadDataFromDrive, deleteDataFromDrive, saveDataToDrive, GOOGLE_CLIENT_ID, GAPI_TOKEN_EXPIRED_ERROR } from './googleApi';
 import { getInitialData, loadLocalDataForUser, mergeWithInitialData, deleteLocalDataForUser } from './utils/dataUtils';
@@ -19,6 +19,7 @@ import CompleteProfileScreen from './screens/CompleteProfileScreen';
 import AuthenticationPromptModal from './components/AuthenticationPromptModal';
 import GreetingScreen from './screens/GreetingScreen';
 import { authenticateBiometric } from './utils/biometricUtils';
+import PromotionModal from './components/PromotionModal';
 
 type AppState = 'LOADING' | 'ONBOARDING' | 'PERMISSION' | 'AUTH' | 'AUTHENTICATING_USER' | 'DATA_LOADING' | 'GREETING' | 'LOGGED_IN' | 'COMPLETE_PROFILE';
 type AuthState = 'CHOOSE_ACCOUNT' | 'LOGIN_FORM';
@@ -34,6 +35,8 @@ const AppContent: React.FC = () => {
     const [loadingMessage, setLoadingMessage] = useState('Loading...');
     const [showPremiumScreen, setShowPremiumScreen] = useState(false);
     const [supabaseSession, setSupabaseSession] = useState<Session | null>(null);
+    const [activePromotion, setActivePromotion] = useState<Promotion | null>(null);
+    const [showPromotion, setShowPromotion] = useState(false);
 
     const handleSelectAccount = useCallback((user: User) => {
         setAuthenticatingUser(user);
@@ -397,8 +400,28 @@ const AppContent: React.FC = () => {
         return { user: newUser };
     }, [users, handleAuthAttempt]);
 
-    const handleGreetingFinish = () => {
+    const handleGreetingFinish = async () => {
         if (verificationResult === 'SUCCESS') {
+            // Fetch promotion from Supabase
+            const supabase = getSupabase();
+            if (supabase) {
+                try {
+                    const { data, error } = await supabase
+                        .from('promotions')
+                        .select('*')
+                        .eq('isActive', true)
+                        .order('createdAt', { ascending: false })
+                        .limit(1);
+                    
+                    if (data && data.length > 0 && !error) {
+                        setActivePromotion(data[0]);
+                        setShowPromotion(true);
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch promotion:", err);
+                }
+            }
+
             if (activeUser && initialData) {
                 const isNewProfile = initialData.businessProfile.businessName === 'My Business' && !initialData.businessProfile.phone;
                 if (isNewProfile) {
@@ -509,61 +532,75 @@ const AppContent: React.FC = () => {
     }, [users]);
 
     const renderContent = () => {
-        switch (appState) {
-            case 'LOADING':
-                return <SplashScreen onComplete={() => {
-                    const storedUsersStr = localStorage.getItem('ob-pro-users') || localStorage.getItem('mynager-users');
-                    const storedUsers = storedUsersStr ? JSON.parse(storedUsersStr) : [];
-                    setUsers(storedUsers);
-                    const hasOnboarded = (localStorage.getItem('ob-pro-onboarded') || localStorage.getItem('mynager-onboarded')) === 'true';
-                    if (!hasOnboarded) setAppState('ONBOARDING');
-                    else {
-                        if (storedUsers.length > 0) setAuthState('CHOOSE_ACCOUNT');
-                        else setAuthState('LOGIN_FORM');
-                        setAppState('AUTH');
+        const content = (() => {
+            switch (appState) {
+                case 'LOADING':
+                    return <SplashScreen onComplete={() => {
+                        const storedUsersStr = localStorage.getItem('ob-pro-users') || localStorage.getItem('mynager-users');
+                        const storedUsers = storedUsersStr ? JSON.parse(storedUsersStr) : [];
+                        setUsers(storedUsers);
+                        const hasOnboarded = (localStorage.getItem('ob-pro-onboarded') || localStorage.getItem('mynager-onboarded')) === 'true';
+                        if (!hasOnboarded) setAppState('ONBOARDING');
+                        else {
+                            if (storedUsers.length > 0) setAuthState('CHOOSE_ACCOUNT');
+                            else setAuthState('LOGIN_FORM');
+                            setAppState('AUTH');
+                        }
+                    }} />;
+                case 'DATA_LOADING':
+                    return <SplashScreen message={loadingMessage} onComplete={() => setAppState('GREETING')} />;
+                case 'GREETING':
+                    return <GreetingScreen status={verificationResult || 'SUCCESS'} onFinish={handleGreetingFinish} />;
+                case 'ONBOARDING':
+                    return <OnboardingScreen onComplete={handleOnboardingComplete} />;
+                case 'PERMISSION':
+                    return <PermissionScreen onResult={handlePermissionComplete} />;
+                case 'AUTH':
+                    if (showPremiumScreen) return <PremiumFeatureScreen onBack={() => setShowPremiumScreen(false)} />;
+                    return authState === 'CHOOSE_ACCOUNT' 
+                        ? <AccountChooserScreen users={users} onSelectAccount={handleSelectAccount} onAddNewAccount={() => setAuthState('LOGIN_FORM')} onPremiumClick={() => setShowPremiumScreen(true)} onDeleteAccount={handleDeleteUser} />
+                        : <LoginScreen onLocalLogin={handleLocalLoginAttempt} onLocalSignUp={handleLocalSignUp} onGoogleSignInClick={() => setShowPremiumScreen(true)} onLoginComplete={handleLoginComplete} onSignUpComplete={handleLoginComplete} />;
+                case 'AUTHENTICATING_USER':
+                    if (!authenticatingUser) return <SplashScreen />;
+                    if ((authenticatingUser.pinCode || authenticatingUser.enableBiometricLogin) && !selectedAuthMethod) {
+                        return <AuthMethodChooserScreen user={authenticatingUser} onSelect={setSelectedAuthMethod} onBack={() => setAppState('AUTH')} />;
                     }
-                }} />;
-            case 'DATA_LOADING':
-                return <SplashScreen message={loadingMessage} onComplete={() => setAppState('GREETING')} />;
-            case 'GREETING':
-                return <GreetingScreen status={verificationResult || 'SUCCESS'} onFinish={handleGreetingFinish} />;
-            case 'ONBOARDING':
-                return <OnboardingScreen onComplete={handleOnboardingComplete} />;
-            case 'PERMISSION':
-                return <PermissionScreen onResult={handlePermissionComplete} />;
-            case 'AUTH':
-                if (showPremiumScreen) return <PremiumFeatureScreen onBack={() => setShowPremiumScreen(false)} />;
-                return authState === 'CHOOSE_ACCOUNT' 
-                    ? <AccountChooserScreen users={users} onSelectAccount={handleSelectAccount} onAddNewAccount={() => setAuthState('LOGIN_FORM')} onPremiumClick={() => setShowPremiumScreen(true)} onDeleteAccount={handleDeleteUser} />
-                    : <LoginScreen onLocalLogin={handleLocalLoginAttempt} onLocalSignUp={handleLocalSignUp} onGoogleSignInClick={() => setShowPremiumScreen(true)} onLoginComplete={handleLoginComplete} onSignUpComplete={handleLoginComplete} />;
-            case 'AUTHENTICATING_USER':
-                if (!authenticatingUser) return <SplashScreen />;
-                if ((authenticatingUser.pinCode || authenticatingUser.enableBiometricLogin) && !selectedAuthMethod) {
-                    return <AuthMethodChooserScreen user={authenticatingUser} onSelect={setSelectedAuthMethod} onBack={() => setAppState('AUTH')} />;
-                }
-                if (selectedAuthMethod === 'BIOMETRIC') {
-                    return <SplashScreen message="Authenticating Biometric..." onComplete={() => {}} />;
-                }
-                return selectedAuthMethod === 'PIN' || (authenticatingUser.pinCode && !selectedAuthMethod)
-                    ? <PinLoginScreen user={authenticatingUser} correctPin={authenticatingUser.pinCode!} onSuccess={() => handleAuthAttempt(true, authenticatingUser)} onBack={() => setAppState('AUTH')} onDeleteProfile={() => handleDeleteUser(authenticatingUser.id)} />
-                    : <PasswordLoginScreen user={authenticatingUser} onSuccess={(pass) => {
-                        const isCorrect = pass === authenticatingUser.password;
-                        handleAuthAttempt(isCorrect, authenticatingUser);
-                        return isCorrect;
-                    }} onBack={() => setAppState('AUTH')} onDeleteProfile={() => handleDeleteUser(authenticatingUser.id)} />;
-            case 'LOGGED_IN':
-                if (activeUser && initialData) {
-                    return <MainScreen activeUser={activeUser} initialData={initialData} onLogout={handleLogout} onUpdateUser={handleUpdateUser} onUpdateUserEmail={handleUpdateUserEmail} onDeleteUser={handleDeleteUser} onPremiumFeatureClick={handleGoogleSync} />;
-                }
-                return <SplashScreen />;
-            case 'COMPLETE_PROFILE':
-                if (activeUser && initialData) {
-                    return <CompleteProfileScreen user={activeUser} initialBusinessProfile={initialData.businessProfile} onComplete={handleCompleteProfile} />;
-                }
-                return <SplashScreen />;
-            default:
-                return <SplashScreen />;
-        }
+                    if (selectedAuthMethod === 'BIOMETRIC') {
+                        return <SplashScreen message="Authenticating Biometric..." onComplete={() => {}} />;
+                    }
+                    return selectedAuthMethod === 'PIN' || (authenticatingUser.pinCode && !selectedAuthMethod)
+                        ? <PinLoginScreen user={authenticatingUser} correctPin={authenticatingUser.pinCode!} onSuccess={() => handleAuthAttempt(true, authenticatingUser)} onBack={() => setAppState('AUTH')} onDeleteProfile={() => handleDeleteUser(authenticatingUser.id)} />
+                        : <PasswordLoginScreen user={authenticatingUser} onSuccess={(pass) => {
+                            const isCorrect = pass === authenticatingUser.password;
+                            handleAuthAttempt(isCorrect, authenticatingUser);
+                            return isCorrect;
+                        }} onBack={() => setAppState('AUTH')} onDeleteProfile={() => handleDeleteUser(authenticatingUser.id)} />;
+                case 'LOGGED_IN':
+                    if (activeUser && initialData) {
+                        return <MainScreen activeUser={activeUser} initialData={initialData} onLogout={handleLogout} onUpdateUser={handleUpdateUser} onUpdateUserEmail={handleUpdateUserEmail} onDeleteUser={handleDeleteUser} onPremiumFeatureClick={handleGoogleSync} />;
+                    }
+                    return <SplashScreen />;
+                case 'COMPLETE_PROFILE':
+                    if (activeUser && initialData) {
+                        return <CompleteProfileScreen user={activeUser} initialBusinessProfile={initialData.businessProfile} onComplete={handleCompleteProfile} />;
+                    }
+                    return <SplashScreen />;
+                default:
+                    return <SplashScreen />;
+            }
+        })();
+
+        return (
+            <>
+                {content}
+                {showPromotion && activePromotion && (
+                    <PromotionModal 
+                        promotion={activePromotion} 
+                        onClose={() => setShowPromotion(false)} 
+                    />
+                )}
+            </>
+        );
     };
     
     return (
@@ -573,7 +610,7 @@ const AppContent: React.FC = () => {
                 <AuthenticationPromptModal
                     user={pendingDeletionUser}
                     onConfirm={(credential) => {
-                        const authType = pendingDeletionUser.enablePinLogin && pendingDeletionUser.pinCode ? 'pin' : (pendingDeletionUser.accountType === 'local' ? 'password' : 'none');
+                        const authType = (pendingDeletionUser.enablePinLogin && pendingDeletionUser.pinCode) ? 'pin' : (pendingDeletionUser.password ? 'password' : 'none');
                         let isValid = false;
                         if (authType === 'pin') isValid = credential === pendingDeletionUser.pinCode;
                         else if (authType === 'password') isValid = credential === pendingDeletionUser.password;

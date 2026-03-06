@@ -98,6 +98,26 @@ export interface Discount {
     productId?: string;
 }
 
+export interface Promotion {
+    id: string;
+    title: string;
+    message: string;
+    imageUrl?: string;
+    link?: string;
+    isActive: boolean;
+    createdAt: string;
+}
+
+export interface SystemNotification {
+    id: string;
+    title: string;
+    message: string;
+    imageUrl?: string;
+    type: 'Update' | 'Alert' | 'Message' | 'Promotion';
+    createdAt: string;
+    isRead?: boolean;
+}
+
 export interface Vendor {
     id: string;
     name: string;
@@ -168,6 +188,7 @@ export enum MainView {
   NOTES = 'NOTES',
   STOCK_REPORT = 'STOCK_REPORT',
   CASH_CLOSING = 'CASH_CLOSING',
+  SYSTEM_NOTIFICATIONS = 'SYSTEM_NOTIFICATIONS',
 }
 
 export interface Product {

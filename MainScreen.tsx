@@ -56,6 +56,7 @@ import WeatherScreen, { WeatherData } from './screens/WeatherScreen';
 import NotesScreen from './screens/NotesScreen';
 import StockReportScreen from './screens/StockReportScreen';
 import CashClosingScreen from './screens/CashClosingScreen';
+import SystemNotificationsScreen from './screens/SystemNotificationsScreen';
 import { CashClosing, Denominations } from './types';
 
 type SyncStatus = 'Synced' | 'Syncing...' | 'Synced to Cloud & Device' | 'Synced to Cloud' | 'Saved to Device' | 'Saved to Browser' | 'Sync Failed';
@@ -140,6 +141,15 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [syncStatus, setSyncStatus] = useState<SyncStatus>('Synced');
     useDebouncedSave(appData, activeUser, setSyncStatus, onLogout);
+
+    useEffect(() => {
+        (window as any).navigateToSystemUpdates = () => {
+            setCurrentView(MainView.SYSTEM_NOTIFICATIONS);
+        };
+        return () => {
+            delete (window as any).navigateToSystemUpdates;
+        };
+    }, []);
 
     useEffect(() => {
         const applyTheme = (theme: Theme) => {
@@ -408,6 +418,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
         // Also clear pending orders
         setPendingOrders(new Map());
         localStorage.removeItem(`${PENDING_ORDERS_KEY_PREFIX}${activeUser.id}`);
+        alert("All data has been cleared successfully. You can now start fresh.");
     }, [activeUser.id]);
 
     const handleForceSync = useCallback(async () => {
@@ -491,6 +502,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
             case MainView.BILLS: return <BillsScreen orders={orders} expenses={expenses} isVatEnabled={settings.isVatEnabled} businessProfile={businessProfile} onDeleteOrder={handleDeleteOrder} onDeleteExpense={handleDeleteExpense} onHome={goToDashboard} activeUser={activeUser} />;
             case MainView.STOCK_REPORT: return <StockReportScreen orders={orders} products={products} purchases={purchases} businessProfile={businessProfile} onBack={() => setCurrentView(MainView.DASHBOARD)} onHome={goToDashboard} onUpdateProducts={(newProds) => updateState('products', newProds)} />;
             case MainView.CASH_CLOSING: return <CashClosingScreen orders={orders} openingCash={settings.openingCash || 0} onCloseDay={(closing) => { updateState('cashClosings', [...cashClosings, closing]); updateSettings({ lastClosedDate: closing.date }); setCurrentView(MainView.DASHBOARD); alert("Day closed successfully. All transactions for today are now locked."); }} onHome={goToDashboard} businessProfile={businessProfile} lastClosing={cashClosings[cashClosings.length - 1]} />;
+            case MainView.SYSTEM_NOTIFICATIONS: return <SystemNotificationsScreen onBack={() => setCurrentView(MainView.DASHBOARD)} />;
             default: return null;
         }
     };
