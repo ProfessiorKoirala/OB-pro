@@ -22,26 +22,32 @@ const SupportOption: React.FC<{
         setTimeout(() => setCopied(false), 2000);
     };
 
+    // Fully hide the account number with asterisks for the UI display
+    const maskedDetail = '*'.repeat(detail.length > 8 ? 10 : detail.length);
+
     return (
-        <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 flex items-center justify-between group">
-            <div className="flex items-center gap-4">
+        <div className="bg-gray-50 dark:bg-gray-800/50 p-3 sm:p-4 rounded-2xl border border-gray-100 dark:border-gray-700 flex items-center justify-between group">
+            <div className="flex items-center gap-3 sm:gap-4">
                 <a 
                     href={url} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-sm transition-transform active:scale-90 hover:scale-105 ${color}`}
+                    className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white shadow-sm transition-transform active:scale-90 hover:scale-105 ${color}`}
                     title={`Open ${name} App`}
                 >
                     {logo}
                 </a>
                 <div>
-                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-0.5">{name}</p>
-                    <p className="text-sm font-bold text-black dark:text-white font-mono">{detail}</p>
+                    <p className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest mb-0.5">{name}</p>
+                    <p className="text-[9px] sm:text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight leading-none mb-1 flex items-center gap-1">
+                        A/C Name: Sandesh Koirala 🇳🇵
+                    </p>
+                    <p className="text-xs sm:text-sm font-bold text-black dark:text-white font-mono">{maskedDetail}</p>
                 </div>
             </div>
             <button 
                 onClick={handleCopy}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all ${
+                className={`px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-tighter transition-all ${
                     copied 
                     ? 'bg-green-500 text-white' 
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black'
@@ -57,7 +63,7 @@ const SupportDeveloperModal: React.FC<SupportDeveloperModalProps> = ({ isOpen, o
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
                     <motion.div 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -69,25 +75,27 @@ const SupportDeveloperModal: React.FC<SupportDeveloperModalProps> = ({ isOpen, o
                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-[40px] shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800"
+                        className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-[32px] sm:rounded-[40px] shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800 max-h-[90vh] flex flex-col"
                     >
-                        <div className="p-8">
-                            <div className="flex justify-between items-start mb-8">
+                        <div className="p-6 sm:p-8 overflow-y-auto">
+                            <div className="flex justify-between items-start mb-6 sm:mb-8">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center text-red-500">
-                                        <HeartIcon className="w-6 h-6" />
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center text-red-500">
+                                        <HeartIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                                     </div>
                                     <div>
-                                        <h2 className="text-2xl font-black text-black dark:text-white italic uppercase tracking-tighter leading-none">Support Dev</h2>
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mt-1">Buy a coffee</p>
+                                        <h2 className="text-xl sm:text-2xl font-black text-black dark:text-white italic uppercase tracking-tighter leading-none flex items-center gap-2">
+                                            Support Dev 🇳🇵
+                                        </h2>
+                                        <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mt-1">Buy a coffee</p>
                                     </div>
                                 </div>
-                                <button onClick={onClose} className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-400 hover:text-black dark:hover:text-white transition-colors">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                                <button onClick={onClose} className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-400 hover:text-black dark:hover:text-white transition-colors">
+                                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
                                 </button>
                             </div>
 
-                            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-8 leading-relaxed">
+                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium mb-6 sm:mb-8 leading-relaxed">
                                 If you find OB Pro helpful, consider supporting its development. Your contribution helps keep the app updated and free of ads.
                             </p>
 
