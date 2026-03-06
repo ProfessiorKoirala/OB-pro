@@ -99,7 +99,6 @@ export async function loadDataFromDrive(accessToken: string): Promise<AppDataBac
         }
         
         console.log("📂 Data loaded successfully from Google Drive.");
-        alert("📂 Data loaded successfully from Google Drive!");
         return data;
     } catch (err: any) {
         if (err.message === GAPI_TOKEN_EXPIRED_ERROR) throw err; // Re-throw

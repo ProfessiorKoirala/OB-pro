@@ -449,7 +449,6 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
             }
             await Promise.all(savePromises);
             setSyncStatus('Synced');
-            alert("Data synced successfully!");
         } catch (error) {
             setSyncStatus('Sync Failed');
             alert("Sync failed. Please check your connection.");
