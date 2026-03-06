@@ -89,7 +89,7 @@ const PremiumFeatureScreen: React.FC<PremiumFeatureScreenProps> = ({ onBack }) =
                     {/* Developer Contact Card: High Impact Grid */}
                     <div className="w-full bg-gray-50 dark:bg-gray-800/50 p-6 rounded-[40px] border border-gray-100 dark:border-gray-800 animate-slide-up [animation-delay:600ms] shadow-sm">
                         <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.4em] mb-4">Contact Developer</p>
-                        <h3 className="text-2xl font-black text-black dark:text-white mb-0.5">Sandesh Koirala</h3>
+                        <h3 className="text-2xl font-black text-black dark:text-white mb-0.5">Ordinary Business</h3>
                         <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 mb-6 uppercase tracking-wider">Software Architect</p>
                         
                         <div className="grid grid-cols-2 gap-3">

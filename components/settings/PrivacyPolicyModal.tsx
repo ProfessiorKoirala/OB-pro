@@ -35,7 +35,7 @@ const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ onClose }) => {
                     </Section>
 
                     <Section title="3. Developer Access">
-                        <p className="font-bold text-red-600">The developer (Sandesh Koirala) has absolutely NO ACCESS to your business data.</p>
+                        <p className="font-bold text-red-600">The developer (Ordinary Business) has absolutely NO ACCESS to your business data.</p>
                         <p>We cannot see, copy, or analyze your sales, customers, or any other sensitive information. Your business is your business, and we are committed to keeping it that way.</p>
                     </Section>
 
@@ -46,7 +46,7 @@ const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ onClose }) => {
                     <Section title="5. Contact for Business or Bug Reports">
                         <p>If you wish to build a custom website or software for your business, or if you encounter a bug in the application, you can contact the developer. Please note that this contact is for business inquiries and technical support only.</p>
                         <div className="mt-4 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border dark:border-gray-600">
-                            <p className="font-bold text-lg text-primary dark:text-white">Sandesh Koirala</p>
+                            <p className="font-bold text-lg text-primary dark:text-white">Ordinary Business</p>
                             <p className="text-text-secondary dark:text-gray-300">sandeshkoirala009@gmail.com</p>
                             <p className="text-text-secondary dark:text-gray-300">+977-9825953166</p>
                             <div className="flex space-x-3 mt-3">

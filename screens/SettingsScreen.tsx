@@ -198,7 +198,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
     const handlePasswordSet = (password: string) => {
         onUpdateUserSettings({ password });
         setPasswordModalOpen(false);
-        alert("Security password set successfully! You can now use it for sensitive actions.");
     };
 
     const handlePinToggle = (value: boolean) => {

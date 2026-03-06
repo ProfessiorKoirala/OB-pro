@@ -43,21 +43,6 @@ async function getHandleFromDB(key: string): Promise<FileSystemDirectoryHandle |
     });
 }
 
-async function verifyPermission(handle: FileSystemDirectoryHandle): Promise<boolean> {
-    const options = { mode: 'readwrite' as const };
-    try {
-        if ((await (handle as any).queryPermission(options)) === 'granted') {
-            return true;
-        }
-        if ((await (handle as any).requestPermission(options)) === 'granted') {
-            return true;
-        }
-    } catch (e) {
-        console.warn("Permission verification failed", e);
-    }
-    return false;
-}
-
 export async function getDirectoryHandle(promptIfNeeded = false): Promise<FileSystemDirectoryHandle | null> {
     try {
         // 1. Check for API support
@@ -79,8 +64,18 @@ export async function getDirectoryHandle(promptIfNeeded = false): Promise<FileSy
         // 3. Check for saved handle
         const savedHandle = await getHandleFromDB('dataDir');
         if (savedHandle) {
-            const hasPermission = await verifyPermission(savedHandle);
-            if (hasPermission) return savedHandle;
+            // Only query permission, don't request it automatically unless promptIfNeeded is true
+            const options = { mode: 'readwrite' as const };
+            if ((await (savedHandle as any).queryPermission(options)) === 'granted') {
+                return savedHandle;
+            }
+            
+            // If we need to prompt, we can request permission here
+            if (promptIfNeeded) {
+                if ((await (savedHandle as any).requestPermission(options)) === 'granted') {
+                    return savedHandle;
+                }
+            }
         }
 
         // 4. Request new handle from user

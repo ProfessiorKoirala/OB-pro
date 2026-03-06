@@ -107,7 +107,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, onComplete }) => {
                 <footer className="p-12 pb-16 flex flex-col items-center gap-2 transition-all duration-1000 delay-[2500ms]" style={{ opacity: phase === 'final' ? 1 : 0 }}>
                     <span className="text-gray-300 dark:text-gray-700 font-black text-[10px] tracking-[0.5em] uppercase leading-none">Developed by</span>
                     <div className="flex flex-col items-center">
-                        <span className="text-black dark:text-white font-black text-2xl tracking-tighter italic leading-none uppercase">Sandesh Koirala</span>
+                        <span className="text-black dark:text-white font-black text-2xl tracking-tighter italic leading-none uppercase">Ordinary Business</span>
                     </div>
                 </footer>
             </div>
