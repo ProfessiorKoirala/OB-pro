@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MainView, User, BusinessSettings } from '../../types';
+import { MainView, User, BusinessSettings, BusinessProfile } from '../../types';
 
 // Import all necessary icons
 import HomeIcon from '../icons/HomeIcon';
@@ -22,6 +22,8 @@ import SmsIcon from '../icons/SmsIcon';
 import PrinterIcon from '../icons/PrinterIcon';
 import ChartIcon from '../icons/ChartIcon';
 import BellIcon from '../icons/BellIcon';
+import WifiIcon from '../icons/WifiIcon';
+import WifiQRModal from '../WifiQRModal';
 import { getSupabase } from '../../src/supabase';
 
 interface DesktopSidebarProps {
@@ -30,6 +32,8 @@ interface DesktopSidebarProps {
     setCurrentView: (view: MainView) => void;
     onLogout: () => void;
     settings: BusinessSettings;
+    businessProfile: BusinessProfile;
+    onUpdateBusinessProfile: (profile: BusinessProfile) => void;
 }
 
 const NavItem: React.FC<{
@@ -74,10 +78,11 @@ const NavItem: React.FC<{
 
 const Divider = () => <div className="mx-6 my-2 border-t border-dashed border-gray-100 dark:border-gray-800" />;
 
-const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView, setCurrentView, onLogout, settings }) => {
+const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView, setCurrentView, onLogout, settings, businessProfile, onUpdateBusinessProfile }) => {
     const [animatePlane, setAnimatePlane] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [hasNewUpdate, setHasNewUpdate] = useState(false);
+    const [isWifiModalOpen, setIsWifiModalOpen] = useState(false);
 
     useEffect(() => {
         const checkUpdates = async () => {
@@ -149,11 +154,14 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
         { view: MainView.TRACKER, label: 'Fleets Tracker', subLabel: 'Logistics · Delivery Status', icon: <TruckIcon />, color: 'bg-indigo-400' },
         { view: MainView.NOTES, label: 'Personal Notes', subLabel: 'Drafts · Manuals · To-do', icon: <LedgerIcon />, color: 'bg-yellow-600' },
         { view: MainView.WEATHER, label: 'Weather Hub', subLabel: 'Local Business Conditions', icon: <CalendarIcon />, color: 'bg-orange-400' },
-        { view: MainView.SYSTEM_NOTIFICATIONS, label: 'System Updates', subLabel: 'News · Alerts · Features', icon: <BellIcon hasBadge={hasNewUpdate} /> as any, color: 'bg-blue-600' },
         { view: MainView.HISTORICAL_DATA_ENTRY, label: 'Daybook Entry', subLabel: 'Manual Record Digitization', icon: <LedgerIcon />, color: 'bg-stone-500' },
         { view: MainView.CALCULATOR, label: 'Calculator', subLabel: 'Quick Arithmetic Utility', icon: <CalculatorIcon />, color: 'bg-zinc-500' },
         { view: MainView.RECYCLE_BIN, label: 'Recycle Bin', subLabel: 'Recover Deleted Items', icon: <TrashIcon />, color: 'bg-red-400' },
     ];
+
+    if (hasNewUpdate) {
+        utilityItems.splice(4, 0, { view: MainView.SYSTEM_NOTIFICATIONS, label: 'System Updates', subLabel: 'News · Alerts · Features', icon: <BellIcon hasBadge={hasNewUpdate} /> as any, color: 'bg-blue-600' });
+    }
 
     // Conditionally add KOT
     if (settings.isKotEnabled) {
@@ -260,7 +268,15 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
                         <SettingsIcon className="w-4 h-4 text-gray-500" />
                         {!isCollapsed && <span className="text-[13px] font-bold text-gray-700 dark:text-gray-300">Settings</span>}
                     </button>
+
                 </div>
+
+                <WifiQRModal 
+                    isOpen={isWifiModalOpen} 
+                    onClose={() => setIsWifiModalOpen(false)} 
+                    qrImage={businessProfile.wifiQR} 
+                    onUpload={(image) => onUpdateBusinessProfile({ ...businessProfile, wifiQR: image })}
+                />
 
                 <Divider />
 

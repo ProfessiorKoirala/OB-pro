@@ -23,6 +23,7 @@ import SparklesIcon from '../components/icons/SparklesIcon';
 import InformationCircleIcon from '../components/icons/InformationCircleIcon';
 import { isBiometricAvailable, registerBiometric } from '../utils/biometricUtils';
 import FingerprintIcon from '../components/icons/FingerprintIcon';
+import WifiIcon from '../components/icons/WifiIcon';
 import PrivacyPolicyModal from '../components/settings/PrivacyPolicyModal';
 import WhatsNextModal from '../components/settings/WhatsNextModal';
 import ImportantNotesModal from '../components/settings/ImportantNotesModal';
@@ -140,6 +141,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
     const [clearDataStep, setClearDataStep] = useState(0);
     const [hasFileSystemAccess, setHasFileSystemAccess] = useState(false);
     const [isQrCodeExpanded, setIsQrCodeExpanded] = useState(false);
+    const [isWifiQrExpanded, setIsWifiQrExpanded] = useState(false);
     const [activeModal, setActiveModal] = useState<'privacy' | 'roadmap' | 'safety' | 'support' | null>(null);
     const [biometricSupported, setBiometricSupported] = useState(false);
     const [isOpeningCashModalOpen, setOpeningCashModalOpen] = useState(false);
@@ -157,6 +159,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
     }, [tempDenominations]);
 
     const qrInputRef = useRef<HTMLInputElement>(null);
+    const wifiQrInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         isBiometricAvailable().then(setBiometricSupported);
@@ -274,6 +277,25 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
         onUpdateBusinessProfile({ ...businessProfile, paymentQR: '' });
     };
 
+    const handleWifiQRUploadClick = () => {
+        wifiQrInputRef.current?.click();
+    };
+    
+    const handleWifiQRFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                onUpdateBusinessProfile({ ...businessProfile, wifiQR: reader.result as string });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    
+    const handleRemoveWifiQR = () => {
+        onUpdateBusinessProfile({ ...businessProfile, wifiQR: '' });
+    };
+
     const handleSaveOpeningCashFromCount = () => {
         setPendingOpeningCash(calculatedOpeningCash);
         setOpeningCashConfirmOpen(true);
@@ -360,7 +382,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
             {activeModal === 'privacy' && <PrivacyPolicyModal onClose={() => setActiveModal(null)} />}
             {activeModal === 'roadmap' && <WhatsNextModal onClose={() => setActiveModal(null)} />}
             {activeModal === 'safety' && <ImportantNotesModal onClose={() => setActiveModal(null)} />}
-            <SupportDeveloperModal isOpen={activeModal === 'support'} onClose={() => setActiveModal(null)} />
+            <SupportDeveloperModal 
+                isOpen={activeModal === 'support'} 
+                onClose={() => setActiveModal(null)} 
+                businessProfile={businessProfile}
+                onUpdateBusinessProfile={onUpdateBusinessProfile}
+            />
 
             {isOpeningCashModalOpen && (
                 <div className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -596,6 +623,55 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
                                     </button>
                                     {businessProfile.paymentQR && (
                                         <button onClick={handleRemoveQR} className="font-semibold text-sm bg-red-100 text-red-600 px-4 py-2 rounded-lg hover:bg-red-200">
+                                            Remove
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </SettingsCard>
+
+                <SettingsCard 
+                    title="WiFi QR Code" 
+                    action={
+                        <button
+                            onClick={() => setIsWifiQrExpanded(!isWifiQrExpanded)}
+                            className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className={`h-6 w-6 transition-transform duration-300 ${isWifiQrExpanded ? 'rotate-180' : ''}`}
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                    }
+                >
+                    <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isWifiQrExpanded ? 'max-h-[500px]' : 'max-h-0'}`}>
+                        <div className="p-4 border-t dark:border-gray-700">
+                            <p className="text-sm text-text-secondary dark:text-gray-400 mb-4">
+                                Upload your business's WiFi QR code. Customers can scan this to connect to your network.
+                            </p>
+                            <div className="flex flex-col items-center space-y-4">
+                                {businessProfile.wifiQR ? (
+                                    <img src={businessProfile.wifiQR} alt="WiFi QR Code" className="w-48 h-48 object-contain border rounded-lg bg-white" />
+                                ) : (
+                                    <div className="w-48 h-48 bg-gray-100 dark:bg-gray-700 rounded-lg flex flex-col items-center justify-center text-text-secondary text-center p-4">
+                                        <WifiIcon className="h-12 w-12 text-gray-400 mb-2" />
+                                        No WiFi QR Uploaded
+                                    </div>
+                                )}
+                                <div className="flex space-x-3">
+                                    <input type="file" ref={wifiQrInputRef} onChange={handleWifiQRFileChange} hidden accept="image/*" />
+                                    <button onClick={handleWifiQRUploadClick} className="font-semibold text-sm bg-blue-100 text-primary px-4 py-2 rounded-lg hover:bg-blue-200">
+                                        {businessProfile.wifiQR ? 'Change QR' : 'Upload QR'}
+                                    </button>
+                                    {businessProfile.wifiQR && (
+                                        <button onClick={handleRemoveWifiQR} className="font-semibold text-sm bg-red-100 text-red-600 px-4 py-2 rounded-lg hover:bg-red-200">
                                             Remove
                                         </button>
                                     )}

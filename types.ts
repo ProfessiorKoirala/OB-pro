@@ -24,6 +24,7 @@ export interface BusinessProfile {
     profilePic: string;
     coverPic: string;
     paymentQR?: string;
+    wifiQR?: string;
     vatNumber?: string;
 }
 

@@ -9,7 +9,9 @@ import BoxIcon from '../components/icons/BoxIcon';
 import GlobalSearchModal from '../components/GlobalSearchModal';
 import { printDailyReport } from '../utils/printUtils';
 import AuthenticationPromptModal from '../components/AuthenticationPromptModal';
-import { motion, AnimatePresence } from 'framer-motion';
+import WifiIcon from '../components/icons/WifiIcon';
+import WifiQRModal from '../components/WifiQRModal';
+import { motion, AnimatePresence } from 'motion/react';
 import { getSupabase } from '../src/supabase';
 
 interface DashboardScreenProps {
@@ -25,8 +27,10 @@ interface DashboardScreenProps {
   setIsMenuOpen: (open: boolean) => void;
   settings: BusinessSettings;
   onUpdateBusinessSettings: (settings: BusinessSettings) => void;
+  onUpdateBusinessProfile: (profile: BusinessProfile) => void;
   activeUser: User;
   isDesktop?: boolean;
+  currentView: MainView;
 }
 
 type Period = 'Today' | 'Week' | 'Month' | 'Year' | 'All Time';
@@ -46,13 +50,22 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     setIsMenuOpen,
     settings,
     onUpdateBusinessSettings,
+    onUpdateBusinessProfile,
     activeUser,
-    isDesktop
+    isDesktop,
+    currentView
 }) => {
     const [period, setPeriod] = useState<Period>('Today');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [animatePlane, setAnimatePlane] = useState(false);
     const [isReopenAuthOpen, setReopenAuthOpen] = useState(false);
+    const [isWifiModalOpen, setIsWifiModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (currentView !== MainView.DASHBOARD) {
+            setIsWifiModalOpen(false);
+        }
+    }, [currentView]);
 
     const today = new Date().toISOString().split('T')[0];
     const isDayClosed = settings.lastClosedDate === today;
@@ -296,7 +309,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     };
 
     return (
-        <div className="bg-white dark:bg-gray-900 h-full relative overflow-hidden transition-colors flex flex-col font-sans">
+        <div className="bg-white dark:bg-gray-900 h-full relative transition-colors flex flex-col font-sans">
             {isSearchOpen && (
                 <div className="absolute inset-0 z-[100] bg-white dark:bg-gray-950 flex flex-col animate-fade-in">
                     <GlobalSearchModal 
@@ -317,7 +330,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 </div>
             )}
 
-            <header className="px-6 pt-6 pb-3 flex items-center justify-between sticky top-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md z-30 shrink-0 transition-colors">
+            <header className="px-6 pt-6 pb-3 flex items-center justify-between sticky top-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md z-[210] shrink-0 transition-colors">
                 <div className="flex items-center gap-3">
                     {!isDesktop && (
                         <button onClick={() => setIsMenuOpen(true)} className="flex items-center gap-2 group shrink-0 bg-gray-50 dark:bg-gray-800 p-1 rounded-xl border border-gray-100 dark:border-gray-700 active:scale-95 transition-all">
@@ -371,7 +384,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
                             }
                             setCurrentView(MainView.SYSTEM_NOTIFICATIONS);
                         }}
-                        className="hidden sm:flex items-center gap-2 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full border border-blue-100 dark:border-blue-900/30 active:scale-95 transition-all relative"
+                        className={`${hasNewUpdate ? 'flex' : 'hidden'} items-center gap-2 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full border border-blue-100 dark:border-blue-900/30 active:scale-95 transition-all relative`}
                     >
                         <div className="relative">
                             <BellIcon className={`w-2.5 h-2.5 ${hasNewUpdate ? 'animate-bounce' : ''}`} />
@@ -383,6 +396,9 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
                             )}
                         </div>
                         <span className="text-[8px] font-black uppercase tracking-widest">Updates</span>
+                    </button>
+                    <button onClick={() => setIsWifiModalOpen(!isWifiModalOpen)} className={`w-8 h-8 rounded-lg flex items-center justify-center border active:scale-90 transition-all ${isWifiModalOpen ? 'bg-blue-500 text-white border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-gray-50 dark:bg-gray-800 text-blue-500 border-gray-100 dark:border-gray-700'}`}>
+                        <WifiIcon className="w-4 h-4" />
                     </button>
                     <button onClick={() => setIsSearchOpen(true)} className="w-8 h-8 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-black dark:text-white border border-gray-100 dark:border-gray-700 active:scale-90 transition-all">
                         <SearchIcon className="w-4 h-4" />
@@ -592,6 +608,14 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
                     />
                 )}
             </main>
+
+            <WifiQRModal 
+                isOpen={isWifiModalOpen} 
+                onClose={() => setIsWifiModalOpen(false)} 
+                qrImage={businessProfile.wifiQR} 
+                onUpload={(image) => onUpdateBusinessProfile({ ...businessProfile, wifiQR: image })}
+                isDesktop={isDesktop}
+            />
 
             <style>{`
                 .plane-path-animation {

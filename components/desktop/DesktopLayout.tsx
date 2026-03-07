@@ -57,6 +57,7 @@ interface DesktopLayoutProps {
     syncStatus: string;
     profileData: BusinessProfile;
     setProfileData: (updater: React.SetStateAction<BusinessProfile>) => void;
+    onUpdateBusinessProfile: (profile: BusinessProfile) => void;
     pendingOrders: Order[]; // Adjusted type here to match MainScreen expectations if needed
     setPendingOrders: React.Dispatch<React.SetStateAction<Map<string, Order>>>;
     isVatEnabled: boolean;
@@ -68,7 +69,7 @@ interface DesktopLayoutProps {
 }
 
 const DesktopLayout: React.FC<DesktopLayoutProps> = (props) => {
-    const { appData, setAppData, activeUser, onUpdateUser, onLogout, onUpdateUserEmail, syncStatus, profileData, setProfileData, pendingOrders, setPendingOrders, isVatEnabled, setIsVatEnabled, handleClearAllData, handleDeleteTable, onDeleteUser, onPremiumFeatureClick } = props;
+    const { appData, setAppData, activeUser, onUpdateUser, onLogout, onUpdateUserEmail, syncStatus, profileData, setProfileData, onUpdateBusinessProfile, pendingOrders, setPendingOrders, isVatEnabled, setIsVatEnabled, handleClearAllData, handleDeleteTable, onDeleteUser, onPremiumFeatureClick } = props;
     
     const { 
         products = [], 
@@ -204,7 +205,7 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = (props) => {
     const renderView = () => {
         const isDesktopView = true;
         switch(currentView) {
-            case MainView.DASHBOARD: return <DashboardScreen isDesktop={isDesktopView} setCurrentView={setCurrentView} businessProfile={profileData} orders={orders} payments={payments} expenses={expenses} products={products} setIsMenuOpen={() => {}} unreadNotificationCount={notifications.filter(n=>!n.read).length} onOpenNotifications={() => setIsNotificationsOpen(true)} settings={settings} vendorPayments={vendorPayments} />;
+            case MainView.DASHBOARD: return <DashboardScreen isDesktop={isDesktopView} setCurrentView={setCurrentView} currentView={currentView} businessProfile={profileData} orders={orders} payments={payments} expenses={expenses} products={products} setIsMenuOpen={() => {}} unreadNotificationCount={notifications.filter(n=>!n.read).length} onOpenNotifications={() => setIsNotificationsOpen(true)} settings={settings} vendorPayments={vendorPayments} onUpdateBusinessProfile={onUpdateBusinessProfile} />;
             case MainView.SALES: return <SalesScreen isDesktop={isDesktopView} setCurrentView={setCurrentView} products={products} tables={tables} creditors={creditors} customers={customers} vendors={vendors} deliveryPartners={deliveryPartners} onUpdateDeliveryPartners={(p)=>updateState('deliveryPartners', p)} discounts={discounts} isVatEnabled={isVatEnabled} isKotEnabled={settings.isKotEnabled} onOrderComplete={handleOrderComplete} onUpdateTableStatus={(id, status) => updateState('tables', tables.map(t => t.id === id ? {...t, status} : t))} onSavePendingOrder={(o) => { setPendingOrders(prev => { const newMap = new Map(prev); const key = (o.type === 'Table' && o.tableId) ? o.tableId : o.id; newMap.set(key, o); return newMap; }); }} onPrintKot={(order) => { const kot: KOT = { id: `kot-${Date.now()}`, orderId: order.id, type: 'NEW', kotNumber: 1, timestamp: Date.now(), items: order.items.map(i => ({ name: i.product.name, quantity: i.quantity })), tableName: order.tableId ? tables.find(t => t.id === order.tableId)?.name : (order.type === 'Takeaway' ? 'Takeaway' : 'Delivery') }; printKOT(kot, profileData); }} onReprintLatestKot={() => {}} pendingOrders={pendingOrders as any} orders={orders} onAddProductClick={() => setModal('addProduct')} onAddTableClick={() => setModal('addTable')} businessProfile={profileData} onDeleteTable={handleDeleteTable} onUpdateSettings={(s) => updateState('settings', s)} businessSettings={settings} onUpdateOrderStatus={handleUpdateOrderStatus} onHome={goToDashboard} />;
             case MainView.INVENTORY: return <InventoryScreen products={products} onAddProductClick={() => setModal('addProduct')} onEditProductClick={(p)=>{setProductToEdit(p); setModal('addProduct');}} onDeleteProduct={(id)=>updateState('products', products.filter(p=>p.id!==id))} onToggleQuickAdd={(id)=>updateState('products', products.map(p=>p.id===id?{...p,isQuickAdd:!p.isQuickAdd}:p))} businessProfile={profileData} onHome={goToDashboard} />;
             case MainView.EXPENSES: return <ExpensesScreen expenses={expenses} onAddClick={() => setModal('addExpense')} onEditClick={(e)=>{setExpenseToEdit(e); setModal('addExpense');}} onDeleteExpense={(id)=>updateState('expenses', expenses.filter(e=>e.id!==id))} businessProfile={profileData} onHome={goToDashboard} />;
@@ -251,14 +252,14 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = (props) => {
             case MainView.CALENDAR: return <CalendarScreen orders={orders} expenses={expenses} payments={payments} reminders={reminders} creditors={creditors} onAddReminder={()=>{}} settings={settings} holidays={holidays} onAddHoliday={()=>{}} onDeleteReminder={()=>{}} onDeleteHoliday={()=>{}} onHome={goToDashboard} isDesktop={isDesktopView} />;
             case MainView.STOCK_REPORT: return <StockReportScreen orders={orders} products={products} purchases={purchases} onBack={() => setCurrentView(MainView.DASHBOARD)} onHome={goToDashboard} onUpdateProducts={(newProds) => updateState('products', newProds)} />;
             case MainView.SYSTEM_NOTIFICATIONS: return <SystemNotificationsScreen onBack={() => setCurrentView(MainView.DASHBOARD)} />;
-            default: return <DashboardScreen isDesktop={isDesktopView} setCurrentView={setCurrentView} businessProfile={profileData} orders={orders} payments={payments} expenses={expenses} products={products} setIsMenuOpen={() => {}} unreadNotificationCount={notifications.filter(n=>!n.read).length} onOpenNotifications={() => setIsNotificationsOpen(true)} settings={settings} vendorPayments={vendorPayments} />;
+            default: return <DashboardScreen isDesktop={isDesktopView} setCurrentView={setCurrentView} currentView={currentView} businessProfile={profileData} orders={orders} payments={payments} expenses={expenses} products={products} setIsMenuOpen={() => {}} unreadNotificationCount={notifications.filter(n=>!n.read).length} onOpenNotifications={() => setIsNotificationsOpen(true)} settings={settings} vendorPayments={vendorPayments} />;
         }
     };
     
     return (
         <div className="desktop-layout">
             <NotificationsDrawer isOpen={isNotificationsOpen} notifications={notifications} onClose={() => setIsNotificationsOpen(false)} onMarkAsRead={(id)=>updateState('notifications', notifications.map(n=>n.id===id?{...n,read:true}:n))} onMarkAllAsRead={()=>updateState('notifications', notifications.map(n=>({...n,read:true})))} onClearAll={()=>updateState('notifications', [])} />
-            <DesktopSidebar activeUser={activeUser} currentView={currentView} setCurrentView={setCurrentView} onLogout={onLogout} settings={settings} />
+            <DesktopSidebar activeUser={activeUser} currentView={currentView} setCurrentView={setCurrentView} onLogout={onLogout} settings={settings} businessProfile={profileData} onUpdateBusinessProfile={onUpdateBusinessProfile} />
             <main ref={contentRef} className="desktop-main-content">
                 {modal === 'addCustomer' && (
                     <AddCustomerModal onClose={() => setModal(null)} onSave={(data) => { updateState('customers', [...customers, { ...data, id: `c-${Date.now()}` }]); setModal(null); }} />

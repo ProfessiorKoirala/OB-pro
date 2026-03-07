@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GoogleOAuthProvider, CodeResponse } from '@react-oauth/google';
 import { getSupabase } from './src/supabase';
 import { Session } from '@supabase/supabase-js';
@@ -125,6 +125,11 @@ const AppContent: React.FC = () => {
         }
     }, [appState, activeUser, initialData, handleSelectAccount]);
 
+    const handleSupabaseSessionRef = useRef(handleSupabaseSession);
+    useEffect(() => {
+        handleSupabaseSessionRef.current = handleSupabaseSession;
+    }, [handleSupabaseSession]);
+
     // Handle Supabase Auth State
     useEffect(() => {
         const supabase = getSupabase();
@@ -132,16 +137,16 @@ const AppContent: React.FC = () => {
 
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSupabaseSession(session);
-            if (session) handleSupabaseSession(session);
+            if (session) handleSupabaseSessionRef.current(session);
         });
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setSupabaseSession(session);
-            if (session) handleSupabaseSession(session);
+            if (session) handleSupabaseSessionRef.current(session);
         });
 
         return () => subscription.unsubscribe();
-    }, [handleSupabaseSession]);
+    }, []); // Run only once
     const [selectedAuthMethod, setSelectedAuthMethod] = useState<AuthMethod>(null);
     const [verificationResult, setVerificationResult] = useState<'SUCCESS' | 'FAILURE' | null>(null);
     const [pendingDeletionUser, setPendingDeletionUser] = useState<User | null>(null);

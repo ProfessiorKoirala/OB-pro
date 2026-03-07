@@ -1,10 +1,15 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import HeartIcon from '../icons/HeartIcon';
+import WifiIcon from '../icons/WifiIcon';
+import WifiQRModal from '../WifiQRModal';
+import { BusinessProfile } from '../../types';
 
 interface SupportDeveloperModalProps {
     isOpen: boolean;
     onClose: () => void;
+    businessProfile: BusinessProfile;
+    onUpdateBusinessProfile: (profile: BusinessProfile) => void;
 }
 
 const SupportOption: React.FC<{
@@ -59,41 +64,53 @@ const SupportOption: React.FC<{
     );
 };
 
-const SupportDeveloperModal: React.FC<SupportDeveloperModalProps> = ({ isOpen, onClose }) => {
+const SupportDeveloperModal: React.FC<SupportDeveloperModalProps> = ({ isOpen, onClose, businessProfile, onUpdateBusinessProfile }) => {
+    const [isWifiModalOpen, setIsWifiModalOpen] = React.useState(false);
+
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={onClose}
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                    />
-                    <motion.div 
-                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-[32px] sm:rounded-[40px] shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800 max-h-[90vh] flex flex-col"
-                    >
-                        <div className="p-6 sm:p-8 overflow-y-auto">
-                            <div className="flex justify-between items-start mb-6 sm:mb-8">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center text-red-500">
-                                        <HeartIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+        <>
+            <AnimatePresence>
+                {isOpen && (
+                    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6">
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={onClose}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        />
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-[32px] sm:rounded-[40px] shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800 max-h-[90vh] flex flex-col"
+                        >
+                            <div className="p-6 sm:p-8 overflow-y-auto">
+                                <div className="flex justify-between items-start mb-6 sm:mb-8">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center text-red-500">
+                                            <HeartIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl sm:text-2xl font-black text-black dark:text-white italic uppercase tracking-tighter leading-none flex items-center gap-2">
+                                                Support Dev 🇳🇵
+                                            </h2>
+                                            <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mt-1">Buy a coffee</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h2 className="text-xl sm:text-2xl font-black text-black dark:text-white italic uppercase tracking-tighter leading-none flex items-center gap-2">
-                                            Support Dev 🇳🇵
-                                        </h2>
-                                        <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mt-1">Buy a coffee</p>
+                                    <div className="flex items-center gap-2">
+                                        <button 
+                                            onClick={() => setIsWifiModalOpen(true)}
+                                            className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center text-blue-500 hover:scale-110 transition-transform shadow-sm"
+                                            title="WiFi QR"
+                                        >
+                                            <WifiIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                                        </button>
+                                        <button onClick={onClose} className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-400 hover:text-black dark:hover:text-white transition-colors">
+                                            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
                                     </div>
                                 </div>
-                                <button onClick={onClose} className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-400 hover:text-black dark:hover:text-white transition-colors">
-                                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
-                                </button>
-                            </div>
 
                             <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium mb-6 sm:mb-8 leading-relaxed">
                                 If you find OB Pro helpful, consider supporting its development. Your contribution helps keep the app updated and free of ads.
@@ -138,6 +155,13 @@ const SupportDeveloperModal: React.FC<SupportDeveloperModalProps> = ({ isOpen, o
                 </div>
             )}
         </AnimatePresence>
+            <WifiQRModal 
+                isOpen={isWifiModalOpen} 
+                onClose={() => setIsWifiModalOpen(false)} 
+                qrImage={businessProfile.wifiQR} 
+                onUpload={(image) => onUpdateBusinessProfile({ ...businessProfile, wifiQR: image })}
+            />
+    </>
     );
 };
 
