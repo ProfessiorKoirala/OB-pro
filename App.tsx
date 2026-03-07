@@ -78,6 +78,12 @@ const AppContent: React.FC = () => {
                 accessToken: providerToken,
             };
 
+            // Get existing users from localStorage directly to avoid stale state or race conditions
+            const storedUsersStr = localStorage.getItem('ob-pro-users') || localStorage.getItem('mynager-users');
+            const storedUsers: User[] = storedUsersStr ? JSON.parse(storedUsersStr) : [];
+            const existingUser = storedUsers.find(u => u.id === userId);
+            const mergedUser = { ...(existingUser || {}), ...gUser };
+
             // If we are currently logged in as a Local user, we are migrating
             if (appState === 'LOGGED_IN' && activeUser?.accountType === 'local') {
                 const oldUserId = activeUser.id;
@@ -93,34 +99,32 @@ const AppContent: React.FC = () => {
                     }
                 }
                 
+                const userWithSettings = { ...activeUser, ...mergedUser };
                 setUsers(prevUsers => {
-                    const existingUser = prevUsers.find(u => u.id === userId);
-                    const userForAuth = { ...(existingUser || {}), ...gUser };
                     const updatedUsers = prevUsers.some(u => u.id === userId)
-                        ? prevUsers.map(u => (u.id === userId ? userForAuth : u))
-                        : [...prevUsers, userForAuth];
+                        ? prevUsers.map(u => (u.id === userId ? userWithSettings : u))
+                        : [...prevUsers, userWithSettings];
                     localStorage.setItem('ob-pro-users', JSON.stringify(updatedUsers));
                     return updatedUsers;
                 });
 
-                setActiveUser(gUser);
+                setActiveUser(userWithSettings);
                 alert("Congratulations! You are now a premium user with Google Drive Sync enabled.");
                 return;
             }
 
             setUsers(prevUsers => {
-                const existingUser = prevUsers.find(u => u.id === userId);
-                const userForAuth = { ...(existingUser || {}), ...gUser };
                 const updatedUsers = prevUsers.some(u => u.id === userId)
-                    ? prevUsers.map(u => (u.id === userId ? userForAuth : u))
-                    : [...prevUsers, userForAuth];
+                    ? prevUsers.map(u => (u.id === userId ? mergedUser : u))
+                    : [...prevUsers, mergedUser];
                 localStorage.setItem('ob-pro-users', JSON.stringify(updatedUsers));
                 return updatedUsers;
             });
             
-            // If we are in AUTH state or CHOOSE_ACCOUNT, log them in automatically
-            if (appState === 'AUTH' || appState === 'LOADING') {
-                handleSelectAccount(gUser);
+            // If we are in AUTH state, log them in automatically
+            // We skip auto-login during LOADING phase to ensure the user sees the account chooser on app restart
+            if (appState === 'AUTH') {
+                handleSelectAccount(mergedUser);
             }
         }
     }, [appState, activeUser, initialData, handleSelectAccount]);
@@ -359,8 +363,9 @@ const AppContent: React.FC = () => {
             const isGoogleAccount = authenticatingUser.accountType === 'google';
             const hasPinAuth = authenticatingUser.enablePinLogin && authenticatingUser.pinCode;
             const hasBiometricAuth = authenticatingUser.enableBiometricLogin && authenticatingUser.biometricCredentialId;
+            const hasPasswordAuth = !!authenticatingUser.password;
             
-            if (isGoogleAccount && !hasPinAuth && !hasBiometricAuth) {
+            if (isGoogleAccount && !hasPinAuth && !hasBiometricAuth && !hasPasswordAuth) {
                 handleAuthAttempt(true, authenticatingUser);
             } else if (selectedAuthMethod === 'BIOMETRIC') {
                 handleBiometricLogin(authenticatingUser);
