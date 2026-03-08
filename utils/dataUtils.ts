@@ -53,6 +53,7 @@ const initialNoteCategories: NoteCategory[] = [
 
 export const getInitialData = (): AppDataBackup => ({
     businessProfile: initialBusinessProfile,
+    userSecurity: {},
     products: mockProducts,
     orders: [],
     payments: [],
@@ -101,6 +102,10 @@ export const mergeWithInitialData = (savedData: any): AppDataBackup => {
         businessProfile: {
             ...initial.businessProfile,
             ...(savedData.businessProfile || {}),
+        },
+        userSecurity: {
+            ...(initial.userSecurity || {}),
+            ...(savedData.userSecurity || {}),
         },
         settings: {
             ...initial.settings,

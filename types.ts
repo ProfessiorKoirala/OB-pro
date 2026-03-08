@@ -395,8 +395,17 @@ export interface CashClosing {
     closedBy: string;
 }
 
+export interface UserSecuritySettings {
+    password?: string;
+    enablePinLogin?: boolean;
+    pinCode?: string | null;
+    enableBiometricLogin?: boolean;
+    biometricCredentialId?: string;
+}
+
 export interface AppDataBackup {
     businessProfile: BusinessProfile;
+    userSecurity?: UserSecuritySettings;
     products: Product[];
     orders: Order[];
     payments: Payment[];

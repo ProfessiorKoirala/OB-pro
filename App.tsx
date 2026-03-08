@@ -38,12 +38,6 @@ const AppContent: React.FC = () => {
     const [activePromotion, setActivePromotion] = useState<Promotion | null>(null);
     const [showPromotion, setShowPromotion] = useState(false);
 
-    const handleSelectAccount = useCallback((user: User) => {
-        setAuthenticatingUser(user);
-        setSelectedAuthMethod(null);
-        setAppState('AUTHENTICATING_USER');
-    }, []);
-
     const handleGoogleSync = useCallback(async () => {
         const supabase = getSupabase();
         if (!supabase) return;
@@ -62,6 +56,16 @@ const AppContent: React.FC = () => {
             alert("Failed to start Google sync. Please check your connection.");
         }
     }, []);
+
+    const handleSelectAccount = useCallback((user: User) => {
+        if (user.accountType === 'google' && !user.accessToken) {
+            handleGoogleSync();
+            return;
+        }
+        setAuthenticatingUser(user);
+        setSelectedAuthMethod(null);
+        setAppState('AUTHENTICATING_USER');
+    }, [handleGoogleSync]);
 
     const handleSupabaseSession = useCallback(async (session: Session) => {
         const { user } = session;
@@ -185,7 +189,7 @@ const AppContent: React.FC = () => {
         }
     }, [activeUser]);
 
-    const handleLogout = useCallback(async () => {
+    const handleLogout = useCallback(async (forceLoginScreen = false) => {
         const supabase = getSupabase();
         if (supabase) {
             await supabase.auth.signOut();
@@ -199,7 +203,7 @@ const AppContent: React.FC = () => {
         const storedUsersStr = localStorage.getItem('ob-pro-users') || localStorage.getItem('mynager-users');
         const storedUsers = storedUsersStr ? JSON.parse(storedUsersStr) : [];
 
-        if (storedUsers.length > 0) {
+        if (storedUsers.length > 0 && !forceLoginScreen) {
             setAuthState('CHOOSE_ACCOUNT');
         } else {
             setAuthState('LOGIN_FORM');
@@ -226,8 +230,16 @@ const AppContent: React.FC = () => {
         } catch (error) {
             if ((error as Error).message === GAPI_TOKEN_EXPIRED_ERROR) {
                 alert("Your session has expired. Please log in again.");
+                // Clear the access token of the user to trigger re-auth next time
+                setUsers(prev => {
+                    const updated = prev.map(u => u.id === user.id ? { ...u, accessToken: undefined } : u);
+                    localStorage.setItem('ob-pro-users', JSON.stringify(updated));
+                    return updated;
+                });
+                handleLogout(true); // Force login screen
+            } else {
+                handleLogout();
             }
-            handleLogout();
             throw error; 
         }
     }, [handleLogout]);
@@ -238,8 +250,29 @@ const AppContent: React.FC = () => {
             setAppState('GREETING');
             try {
                 const loadedData = await loadUserData(userToVerify);
+                
+                // Update user with security settings from Drive if they exist
+                let finalUser = userToVerify;
+                if (loadedData.userSecurity) {
+                    finalUser = {
+                        ...userToVerify,
+                        password: loadedData.userSecurity.password || userToVerify.password,
+                        enablePinLogin: loadedData.userSecurity.enablePinLogin !== undefined ? loadedData.userSecurity.enablePinLogin : userToVerify.enablePinLogin,
+                        pinCode: loadedData.userSecurity.pinCode || userToVerify.pinCode,
+                        enableBiometricLogin: loadedData.userSecurity.enableBiometricLogin !== undefined ? loadedData.userSecurity.enableBiometricLogin : userToVerify.enableBiometricLogin,
+                        biometricCredentialId: loadedData.userSecurity.biometricCredentialId || userToVerify.biometricCredentialId,
+                    };
+                    
+                    // Save updated user to users list and localStorage
+                    setUsers(prev => {
+                        const updated = prev.map(u => u.id === finalUser.id ? finalUser : u);
+                        localStorage.setItem('ob-pro-users', JSON.stringify(updated));
+                        return updated;
+                    });
+                }
+                
                 setInitialData(loadedData);
-                setActiveUser(userToVerify);
+                setActiveUser(finalUser);
             } catch (error) {
                 console.error("Data load failed", error);
             }

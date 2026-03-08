@@ -143,6 +143,26 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
     const [syncStatus, setSyncStatus] = useState<SyncStatus>('Synced');
     useDebouncedSave(appData, activeUser, setSyncStatus, onLogout);
 
+    // Sync activeUser security settings into appData for cloud backup
+    useEffect(() => {
+        if (activeUser) {
+            const newSecurity = {
+                password: activeUser.password,
+                enablePinLogin: activeUser.enablePinLogin,
+                pinCode: activeUser.pinCode,
+                enableBiometricLogin: activeUser.enableBiometricLogin,
+                biometricCredentialId: activeUser.biometricCredentialId,
+            };
+            
+            if (JSON.stringify(appData.userSecurity) !== JSON.stringify(newSecurity)) {
+                setAppData(prev => ({
+                    ...prev,
+                    userSecurity: newSecurity
+                }));
+            }
+        }
+    }, [activeUser.password, activeUser.enablePinLogin, activeUser.pinCode, activeUser.enableBiometricLogin, activeUser.biometricCredentialId, appData.userSecurity]);
+
     useEffect(() => {
         (window as any).navigateToSystemUpdates = () => {
             // Clear the "new update" badge by updating the last seen timestamp
