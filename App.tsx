@@ -15,6 +15,7 @@ import PinLoginScreen from './screens/PinLoginScreen';
 import PasswordLoginScreen from './screens/PasswordLoginScreen';
 import PremiumFeatureScreen from './screens/PremiumFeatureScreen';
 import AuthMethodChooserScreen from './screens/AuthMethodChooserScreen';
+import BiometricAuthScreen from './screens/BiometricAuthScreen';
 import CompleteProfileScreen from './screens/CompleteProfileScreen';
 import AuthenticationPromptModal from './components/AuthenticationPromptModal';
 import GreetingScreen from './screens/GreetingScreen';
@@ -609,7 +610,7 @@ const AppContent: React.FC = () => {
                         return <AuthMethodChooserScreen user={authenticatingUser} onSelect={setSelectedAuthMethod} onBack={() => setAppState('AUTH')} />;
                     }
                     if (selectedAuthMethod === 'BIOMETRIC') {
-                        return <SplashScreen message="Authenticating Biometric..." onComplete={() => {}} />;
+                        return <BiometricAuthScreen user={authenticatingUser} onBack={() => setSelectedAuthMethod(null)} />;
                     }
                     return selectedAuthMethod === 'PIN' || (authenticatingUser.pinCode && !selectedAuthMethod)
                         ? <PinLoginScreen user={authenticatingUser} correctPin={authenticatingUser.pinCode!} onSuccess={() => handleAuthAttempt(true, authenticatingUser)} onBack={() => setAppState('AUTH')} onDeleteProfile={() => handleDeleteUser(authenticatingUser.id)} />
