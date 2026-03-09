@@ -41,7 +41,7 @@ interface SettingsScreenProps {
     onUpdateBusinessSettings: (settings: BusinessSettings) => void;
     onExportData: () => void;
     onImportData: () => void;
-    onLogout: () => void;
+    onLogout: (force?: boolean, expiry?: boolean) => void;
     activeUser: User;
     onUpdateUserSettings: (updates: Partial<User>) => void;
     setCurrentView: (view: MainView) => void;

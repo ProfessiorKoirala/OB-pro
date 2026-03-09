@@ -190,11 +190,26 @@ const AppContent: React.FC = () => {
         }
     }, [activeUser]);
 
-    const handleLogout = useCallback(async (forceLoginScreen = false) => {
+    const handleLogout = useCallback(async (forceLoginScreen: boolean | React.MouseEvent = false, isExpiry = false) => {
+        const shouldForce = typeof forceLoginScreen === 'boolean' ? forceLoginScreen : false;
+        
         const supabase = getSupabase();
         if (supabase) {
             await supabase.auth.signOut();
         }
+
+        // If it's an expiry logout for a Google user, trigger re-auth immediately for "easy user" experience
+        if (isExpiry && activeUser?.accountType === 'google') {
+            // Clear the access token first to ensure we get a fresh one
+            setUsers(prev => {
+                const updated = prev.map(u => u.id === activeUser.id ? { ...u, accessToken: undefined } : u);
+                localStorage.setItem('ob-pro-users', JSON.stringify(updated));
+                return updated;
+            });
+            handleGoogleSync();
+            return;
+        }
+
         setActiveUser(null);
         setInitialData(null);
         setAuthenticatingUser(null);
@@ -203,14 +218,15 @@ const AppContent: React.FC = () => {
         
         const storedUsersStr = localStorage.getItem('ob-pro-users') || localStorage.getItem('mynager-users');
         const storedUsers = storedUsersStr ? JSON.parse(storedUsersStr) : [];
+        setUsers(storedUsers);
 
-        if (storedUsers.length > 0 && !forceLoginScreen) {
+        if (storedUsers.length > 0 && !shouldForce) {
             setAuthState('CHOOSE_ACCOUNT');
         } else {
             setAuthState('LOGIN_FORM');
         }
         setAppState('AUTH');
-    }, []);
+    }, [activeUser, handleGoogleSync]);
     
     const loadUserData = useCallback(async (user: User): Promise<AppDataBackup> => {
         try {
@@ -230,20 +246,25 @@ const AppContent: React.FC = () => {
             }
         } catch (error) {
             if ((error as Error).message === GAPI_TOKEN_EXPIRED_ERROR) {
-                alert("Your session has expired. Please log in again.");
                 // Clear the access token of the user to trigger re-auth next time
                 setUsers(prev => {
                     const updated = prev.map(u => u.id === user.id ? { ...u, accessToken: undefined } : u);
                     localStorage.setItem('ob-pro-users', JSON.stringify(updated));
                     return updated;
                 });
-                handleLogout(true); // Force login screen
+                
+                if (user.accountType === 'google') {
+                    // Automatic re-auth for Google users
+                    handleGoogleSync();
+                } else {
+                    handleLogout(true); // Force login screen for local users
+                }
             } else {
                 handleLogout();
             }
             throw error; 
         }
-    }, [handleLogout]);
+    }, [handleLogout, handleGoogleSync]);
 
     const handleAuthAttempt = useCallback(async (isCorrect: boolean, userToVerify: User) => {
         if (isCorrect) {

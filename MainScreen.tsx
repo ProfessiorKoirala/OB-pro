@@ -62,7 +62,7 @@ import { CashClosing, Denominations } from './types';
 
 type SyncStatus = 'Synced' | 'Syncing...' | 'Synced to Cloud & Device' | 'Synced to Cloud' | 'Saved to Device' | 'Saved to Browser' | 'Sync Failed';
 
-const useDebouncedSave = (data: AppDataBackup, user: User, setSyncStatus: React.Dispatch<React.SetStateAction<SyncStatus>>, onLogout: () => void) => {
+const useDebouncedSave = (data: AppDataBackup, user: User, setSyncStatus: React.Dispatch<React.SetStateAction<SyncStatus>>, onLogout: (force?: boolean, expiry?: boolean) => void) => {
     useEffect(() => {
         if (!data) return;
         const handler = setTimeout(() => {
@@ -82,6 +82,9 @@ const useDebouncedSave = (data: AppDataBackup, user: User, setSyncStatus: React.
                     setSyncStatus('Synced');
                 } catch (error) {
                     setSyncStatus('Sync Failed');
+                    if ((error as Error).message === GAPI_TOKEN_EXPIRED_ERROR) {
+                        onLogout(false, true); // Trigger expiry logout
+                    }
                 }
             };
             saveData();
@@ -95,7 +98,7 @@ const PENDING_ORDERS_KEY_PREFIX = 'ob-pro-pending-orders-';
 interface MainScreenProps {
     activeUser: User;
     initialData: AppDataBackup;
-    onLogout: () => void;
+    onLogout: (force?: boolean, expiry?: boolean) => void;
     onUpdateUser: (updatedUser: User) => void;
     onUpdateUserEmail: (oldUserId: string, migratedUser: User) => void;
     onDeleteUser: (userId: string) => void;

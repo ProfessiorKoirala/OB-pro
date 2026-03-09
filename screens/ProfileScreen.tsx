@@ -10,7 +10,7 @@ import { BusinessProfile, AppDataBackup } from '../types';
 
 interface ProfileScreenProps {
   onBack: () => void;
-  onLogout: () => void;
+  onLogout: (force?: boolean, expiry?: boolean) => void;
   onEdit: () => void;
   profileData: BusinessProfile;
   appData: AppDataBackup;
