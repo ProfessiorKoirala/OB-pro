@@ -31,6 +31,7 @@ interface DashboardScreenProps {
   activeUser: User;
   isDesktop?: boolean;
   currentView: MainView;
+  syncStatus: string;
 }
 
 type Period = 'Today' | 'Week' | 'Month' | 'Year' | 'All Time';
@@ -53,7 +54,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     onUpdateBusinessProfile,
     activeUser,
     isDesktop,
-    currentView
+    currentView,
+    syncStatus
 }) => {
     const [period, setPeriod] = useState<Period>('Today');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -351,6 +353,12 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-shine-slow"></div>
                                 </span>
                             </h1>
+                            {syncStatus === 'Reloading from Cloud...' && (
+                                <div className="flex items-center gap-1 ml-1 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded-full">
+                                    <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
+                                    <span className="text-[7px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-tighter">Syncing</span>
+                                </div>
+                            )}
                         </div>
                         <div className="h-4 overflow-hidden mt-1">
                             <div 

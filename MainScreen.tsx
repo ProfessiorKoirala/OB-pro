@@ -25,7 +25,7 @@ import AddEditStaffModal from './components/staff/AddEditStaffModal';
 import StaffManagementScreen from './screens/StaffManagementScreen';
 import StaffDetailScreen from './screens/StaffDetailScreen';
 import ReportsScreen from './screens/ReportsScreen';
-import { saveDataToDrive, GAPI_TOKEN_EXPIRED_ERROR } from './googleApi';
+import { saveDataToDrive, getFileDataMetadata, loadDataFromDrive, GAPI_TOKEN_EXPIRED_ERROR } from './googleApi';
 import { getInitialData, saveLocalDataForUser, SaveStatus, deleteLocalDataForUser, mergeWithInitialData } from './utils/dataUtils';
 import DiscountManagementScreen from './screens/DiscountManagementScreen';
 import AddEditDiscountModal from './components/discounts/AddEditDiscountModal';
@@ -60,11 +60,14 @@ import CashClosingScreen from './screens/CashClosingScreen';
 import SystemNotificationsScreen from './screens/SystemNotificationsScreen';
 import { CashClosing, Denominations } from './types';
 
-type SyncStatus = 'Synced' | 'Syncing...' | 'Synced to Cloud & Device' | 'Synced to Cloud' | 'Saved to Device' | 'Saved to Browser' | 'Sync Failed';
+type SyncStatus = 'Synced' | 'Syncing...' | 'Synced to Cloud & Device' | 'Synced to Cloud' | 'Saved to Device' | 'Saved to Browser' | 'Sync Failed' | 'Reloading from Cloud...';
 
-const useDebouncedSave = (data: AppDataBackup, user: User, setSyncStatus: React.Dispatch<React.SetStateAction<SyncStatus>>, onLogout: (force?: boolean, expiry?: boolean) => void) => {
+const useDebouncedSave = (data: AppDataBackup, user: User, setSyncStatus: React.Dispatch<React.SetStateAction<SyncStatus>>, onLogout: (force?: boolean, expiry?: boolean) => void, setLastSaveTime: (time: number) => void, isRemoteUpdate: React.MutableRefObject<boolean>) => {
     useEffect(() => {
-        if (!data) return;
+        if (!data || isRemoteUpdate.current) {
+            isRemoteUpdate.current = false;
+            return;
+        }
         const handler = setTimeout(() => {
             const saveData = async () => {
                 setSyncStatus('Syncing...');
@@ -80,6 +83,7 @@ const useDebouncedSave = (data: AppDataBackup, user: User, setSyncStatus: React.
                     }
                     await Promise.all(savePromises);
                     setSyncStatus('Synced');
+                    setLastSaveTime(Date.now());
                 } catch (error) {
                     setSyncStatus('Sync Failed');
                     if ((error as Error).message === GAPI_TOKEN_EXPIRED_ERROR) {
@@ -90,7 +94,55 @@ const useDebouncedSave = (data: AppDataBackup, user: User, setSyncStatus: React.
             saveData();
         }, 500);
         return () => clearTimeout(handler);
-    }, [data, user, setSyncStatus, onLogout]);
+    }, [data, user, setSyncStatus, onLogout, setLastSaveTime]);
+};
+
+const useRemoteSync = (user: User, lastSaveTime: number, setAppData: React.Dispatch<React.SetStateAction<AppDataBackup>>, onLogout: (force?: boolean, expiry?: boolean) => void, isRemoteUpdate: React.MutableRefObject<boolean>, setSyncStatus: React.Dispatch<React.SetStateAction<SyncStatus>>) => {
+    const lastRemoteModifiedTime = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (user.accountType !== 'google' || !user.accessToken) return;
+
+        const checkRemoteChanges = async () => {
+            try {
+                const metadata = await getFileDataMetadata(user.accessToken!);
+                if (metadata && metadata.modifiedTime) {
+                    // If this is our first check, just store the time
+                    if (!lastRemoteModifiedTime.current) {
+                        lastRemoteModifiedTime.current = metadata.modifiedTime;
+                        return;
+                    }
+
+                    // If remote is newer than what we last saw AND newer than our last local save
+                    const remoteTime = new Date(metadata.modifiedTime).getTime();
+                    const lastSeenTime = new Date(lastRemoteModifiedTime.current).getTime();
+                    
+                    if (remoteTime > lastSeenTime && remoteTime > lastSaveTime + 3000) { // 3s buffer to avoid reloading our own save
+                        console.log("🔄 Remote changes detected on Google Drive. Reloading...");
+                        setSyncStatus('Reloading from Cloud...');
+                        const remoteData = await loadDataFromDrive(user.accessToken!);
+                        if (remoteData) {
+                            const merged = mergeWithInitialData(remoteData);
+                            isRemoteUpdate.current = true;
+                            setAppData(merged);
+                            lastRemoteModifiedTime.current = metadata.modifiedTime;
+                            setSyncStatus('Synced');
+                        }
+                    } else if (remoteTime > lastSeenTime) {
+                        // Remote was updated but it was likely our own save
+                        lastRemoteModifiedTime.current = metadata.modifiedTime;
+                    }
+                }
+            } catch (error) {
+                if ((error as Error).message === GAPI_TOKEN_EXPIRED_ERROR) {
+                    onLogout(false, true);
+                }
+            }
+        };
+
+        const interval = setInterval(checkRemoteChanges, 8000); // Check every 8 seconds
+        return () => clearInterval(interval);
+    }, [user, lastSaveTime, setAppData, onLogout, setSyncStatus, isRemoteUpdate]);
 };
 
 const PENDING_ORDERS_KEY_PREFIX = 'ob-pro-pending-orders-';
@@ -144,7 +196,11 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
     const [isEditorActive, setEditorActive] = useState(false); 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [syncStatus, setSyncStatus] = useState<SyncStatus>('Synced');
-    useDebouncedSave(appData, activeUser, setSyncStatus, onLogout);
+    const [lastSaveTime, setLastSaveTime] = useState<number>(Date.now());
+    const isRemoteUpdate = useRef(false);
+    
+    useDebouncedSave(appData, activeUser, setSyncStatus, onLogout, setLastSaveTime, isRemoteUpdate);
+    useRemoteSync(activeUser, lastSaveTime, setAppData, onLogout, isRemoteUpdate, setSyncStatus);
 
     // Sync activeUser security settings into appData for cloud backup
     useEffect(() => {
@@ -560,8 +616,8 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
                     {isMenuOpen && <div className="absolute inset-0 z-50 rounded-[32px] cursor-pointer" onClick={() => setIsMenuOpen(false)} />}
                     <div className="relative h-full w-full overflow-hidden">
                         <div className={`flex h-full w-[400%] transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] gpu-accelerated ${!isSwipeableView ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ transform: `translate3d(-${swipeIndex * 25}%, 0, 0)` }}>
-                            <div className="w-1/4 h-full overflow-hidden"><DashboardScreen setIsMenuOpen={setIsMenuOpen} setCurrentView={setCurrentView} currentView={currentView} businessProfile={businessProfile} orders={orders} expenses={expenses} products={products} payments={payments} vendorPayments={vendorPayments} unreadNotificationCount={notifications.filter(n=>!n.read).length} onOpenNotifications={() => setIsNotificationsOpen(true)} settings={settings} onUpdateBusinessSettings={updateSettings} onUpdateBusinessProfile={(p)=>updateState('businessProfile', p)} activeUser={activeUser} isDesktop={false} /></div>
-                            <div className="w-1/4 h-full overflow-hidden"><SalesScreen products={products} tables={tables} creditors={creditors} customers={customers} vendors={vendors} deliveryPartners={deliveryPartners} onUpdateDeliveryPartners={(p)=>updateState('deliveryPartners', p)} discounts={discounts} isVatEnabled={settings.isVatEnabled} isKotEnabled={settings.isKotEnabled} onOrderComplete={handleOrderComplete} onUpdateTableStatus={(id, status) => updateState('tables', tables.map(t => t.id === id ? {...t, status} : t))} onSavePendingOrder={(o) => { setPendingOrders(prev => { const newMap = new Map(prev); const key = (o.type === 'Table' && o.tableId) ? o.tableId : o.id; newMap.set(key, o); return newMap; }); }} onPrintKot={(order) => { const kot: KOT = { id: `kot-${Date.now()}`, orderId: order.id, type: 'NEW', kotNumber: 1, timestamp: Date.now(), items: order.items.map(i => ({ name: i.product.name, quantity: i.quantity })), tableName: order.tableId ? tables.find(t => t.id === order.tableId)?.name : (order.type === 'Takeaway' ? 'Takeaway' : 'Delivery') }; printKOT(kot, businessProfile); }} onReprintLatestKot={() => {}} pendingOrders={pendingOrders} orders={orders} onAddProductClick={() => setModal('addProduct')} onAddTableClick={() => setModal('addTable')} businessProfile={businessProfile} onDeleteTable={(id)=>updateState('tables', tables.filter(t=>t.id!==id))} onEditorToggle={setEditorActive} onUpdateSettings={updateSettings} businessSettings={settings} onUpdateOrderStatus={handleUpdateOrderStatus} onHome={goToDashboard} /></div>
+                            <div className="w-1/4 h-full overflow-hidden"><DashboardScreen setIsMenuOpen={setIsMenuOpen} setCurrentView={setCurrentView} currentView={currentView} businessProfile={businessProfile} orders={orders} expenses={expenses} products={products} payments={payments} vendorPayments={vendorPayments} unreadNotificationCount={notifications.filter(n=>!n.read).length} onOpenNotifications={() => setIsNotificationsOpen(true)} settings={settings} onUpdateBusinessSettings={updateSettings} onUpdateBusinessProfile={(p)=>updateState('businessProfile', p)} activeUser={activeUser} isDesktop={false} syncStatus={syncStatus} /></div>
+                            <div className="w-1/4 h-full overflow-hidden"><SalesScreen products={products} tables={tables} creditors={creditors} customers={customers} vendors={vendors} deliveryPartners={deliveryPartners} onUpdateDeliveryPartners={(p)=>updateState('deliveryPartners', p)} discounts={discounts} isVatEnabled={settings.isVatEnabled} isKotEnabled={settings.isKotEnabled} onOrderComplete={handleOrderComplete} onUpdateTableStatus={(id, status) => updateState('tables', tables.map(t => t.id === id ? {...t, status} : t))} onSavePendingOrder={(o) => { setPendingOrders(prev => { const newMap = new Map(prev); const key = (o.type === 'Table' && o.tableId) ? o.tableId : o.id; newMap.set(key, o); return newMap; }); }} onPrintKot={(order) => { const kot: KOT = { id: `kot-${Date.now()}`, orderId: order.id, type: 'NEW', kotNumber: 1, timestamp: Date.now(), items: order.items.map(i => ({ name: i.product.name, quantity: i.quantity })), tableName: order.tableId ? tables.find(t => t.id === order.tableId)?.name : (order.type === 'Takeaway' ? 'Takeaway' : 'Delivery') }; printKOT(kot, businessProfile); }} onReprintLatestKot={() => {}} pendingOrders={pendingOrders} orders={orders} onAddProductClick={() => setModal('addProduct')} onAddTableClick={() => setModal('addTable')} businessProfile={businessProfile} onDeleteTable={(id)=>updateState('tables', tables.filter(t=>t.id!==id))} onEditorToggle={setEditorActive} onUpdateSettings={updateSettings} businessSettings={settings} onUpdateOrderStatus={handleUpdateOrderStatus} onHome={goToDashboard} syncStatus={syncStatus} /></div>
                             <div className="w-1/4 h-full overflow-hidden"><ExpensesScreen expenses={expenses} onAddClick={() => setModal('addExpense')} onEditClick={(e)=>{setExpenseToEdit(e); setModal('addExpense');}} onDeleteExpense={(id)=>updateState('expenses', expenses.filter(e=>e.id!==id))} businessProfile={businessProfile} onHome={goToDashboard} /></div>
                             <div className="w-1/4 h-full overflow-hidden">
                                 <InventoryScreen 

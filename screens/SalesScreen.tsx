@@ -39,6 +39,7 @@ interface SalesScreenProps {
     onUpdateDeliveryPartners: (partners: DeliveryPartner[]) => void;
     onUpdateOrderStatus?: (id: string, status: OrderStatus) => void;
     onHome?: () => void;
+    syncStatus?: string;
 }
 
 type SalesStep = 'SALES_MANAGER' | 'EDIT_ORDER';
@@ -49,7 +50,7 @@ const SalesScreen: React.FC<SalesScreenProps> = (props) => {
         products, tables, creditors, customers, vendors, discounts, isVatEnabled, isKotEnabled, onOrderComplete, 
         onUpdateTableStatus, onSavePendingOrder, onPrintKot, onReprintLatestKot, pendingOrders, orders, onAddProductClick, onAddTableClick, businessProfile,
         isDesktop, setCurrentView, orderToEdit, onUpdateAndSaveOrder, onEditCancel, onDeleteTable, onEditorToggle, onUpdateSettings, businessSettings,
-        deliveryPartners, onUpdateDeliveryPartners, onUpdateOrderStatus, onHome
+        deliveryPartners, onUpdateDeliveryPartners, onUpdateOrderStatus, onHome, syncStatus
     } = props;
     
     const [step, setStep] = useState<SalesStep>(orderToEdit ? 'EDIT_ORDER' : 'SALES_MANAGER');
@@ -284,6 +285,7 @@ const SalesScreen: React.FC<SalesScreenProps> = (props) => {
                     onUpdateDeliveryPartners={onUpdateDeliveryPartners}
                     onUpdateOrderStatus={onUpdateOrderStatus}
                     onHome={onHome}
+                    syncStatus={syncStatus}
                 />
             )}
         </div>

@@ -192,10 +192,26 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
             </button>
             
-            <div className="flex justify-center">
-                <span className="text-[9px] font-black text-gray-300 dark:text-gray-700 uppercase tracking-[0.45em] text-center">
-                    Powered by Ordinary Business
-                </span>
+            <div className="flex flex-col items-center gap-4">
+                <div className="flex justify-center">
+                    <span className="text-[9px] font-black text-gray-300 dark:text-gray-700 uppercase tracking-[0.45em] text-center">
+                        Powered by Ordinary Business
+                    </span>
+                </div>
+                <div className="flex justify-center gap-4">
+                    <button 
+                        onClick={() => window.location.href = '/privacy'}
+                        className="text-[8px] font-bold text-gray-300 dark:text-gray-700 uppercase tracking-widest hover:text-black dark:hover:text-white transition-colors"
+                    >
+                        Privacy Policy
+                    </button>
+                    <button 
+                        onClick={() => window.location.href = '/terms'}
+                        className="text-[8px] font-bold text-gray-300 dark:text-gray-700 uppercase tracking-widest hover:text-black dark:hover:text-white transition-colors"
+                    >
+                        Terms of Service
+                    </button>
+                </div>
             </div>
         </div>
       </footer>

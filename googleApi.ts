@@ -75,6 +75,28 @@ async function getDriveFileId(accessToken: string): Promise<string | null> {
 }
 
 /**
+ * Gets the metadata (including modifiedTime) of the data file.
+ * @param accessToken - The OAuth2 access token.
+ */
+export async function getFileDataMetadata(accessToken: string): Promise<{ id: string, modifiedTime: string } | null> {
+    try {
+        const query = encodeURIComponent(`name='${DATA_FILE_NAME}' and trashed=false`);
+        const response = await authorizedFetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,modifiedTime)`, {
+            headers: new Headers({ 'Authorization': `Bearer ${accessToken}` }),
+        });
+        
+        const data = await response.json();
+        if (!response.ok) throw data;
+        
+        const file = data.files.length > 0 ? data.files[0] : null;
+        return file ? { id: file.id, modifiedTime: file.modifiedTime } : null;
+    } catch (err: any) {
+        if (err.message === GAPI_TOKEN_EXPIRED_ERROR) throw err;
+        return null;
+    }
+}
+
+/**
  * Loads and parses 'mynagerData.json' from Google Drive.
  * @param accessToken - The OAuth2 access token.
  */

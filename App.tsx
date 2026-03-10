@@ -19,6 +19,8 @@ import BiometricAuthScreen from './screens/BiometricAuthScreen';
 import CompleteProfileScreen from './screens/CompleteProfileScreen';
 import AuthenticationPromptModal from './components/AuthenticationPromptModal';
 import GreetingScreen from './screens/GreetingScreen';
+import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
+import TermsOfServiceScreen from './screens/TermsOfServiceScreen';
 import { authenticateBiometric } from './utils/biometricUtils';
 import PromotionModal from './components/PromotionModal';
 
@@ -597,6 +599,14 @@ const AppContent: React.FC = () => {
     }, [users]);
 
     const renderContent = () => {
+        // Simple routing for Privacy and Terms
+        if (window.location.pathname === '/privacy') {
+            return <PrivacyPolicyScreen />;
+        }
+        if (window.location.pathname === '/terms') {
+            return <TermsOfServiceScreen />;
+        }
+
         const content = (() => {
             switch (appState) {
                 case 'LOADING':

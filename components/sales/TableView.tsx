@@ -188,6 +188,7 @@ interface TableViewProps {
     onUpdateDeliveryPartners: (partners: DeliveryPartner[]) => void;
     onUpdateOrderStatus?: (id: string, status: OrderStatus) => void;
     onHome?: () => void;
+    syncStatus?: string;
 }
 
 const TableView: React.FC<TableViewProps> = (props) => {
@@ -196,7 +197,7 @@ const TableView: React.FC<TableViewProps> = (props) => {
         activeSegment, setActiveSegment, pendingOrders, orders,
         onAddDeliveryOrder, onAddTakeawayOrder, onSelectExistingOrder,
         deliveryPartners, onUpdateDeliveryPartners, onUpdateOrderStatus,
-        onHome
+        onHome, syncStatus
     } = props;
 
     const [isPartnerManagerOpen, setIsPartnerManagerOpen] = useState(false);
@@ -292,6 +293,12 @@ const TableView: React.FC<TableViewProps> = (props) => {
                         <div className="animate-fade-in">
                             <div className="flex items-center gap-1.5">
                                  <h1 className="text-3xl font-black text-black dark:text-white italic uppercase tracking-tighter leading-none">OB Sales</h1>
+                                 {syncStatus === 'Reloading from Cloud...' && (
+                                    <div className="flex items-center gap-1 ml-1 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded-full">
+                                        <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
+                                        <span className="text-[7px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-tighter">Syncing</span>
+                                    </div>
+                                 )}
                             </div>
                             <p className="text-[10px] font-black text-gray-300 dark:text-gray-600 uppercase tracking-[0.4em] mt-2 italic leading-none">Terminal Control</p>
                         </div>
