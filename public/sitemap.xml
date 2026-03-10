@@ -1,21 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <!-- Main Application Home -->
   <url>
     <loc>https://obpro.netlify.app/</loc>
-    <lastmod>2026-03-10</lastmod>
-    <changefreq>monthly</changefreq>
+    <lastmod>2026-03-10T04:15:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://api.dicebear.com/7.x/initials/svg?seed=OB&amp;backgroundColor=000000&amp;fontFamily=Verdana&amp;fontWeight=900&amp;italic=true&amp;fontSize=45</image:loc>
+      <image:title>OB Pro - Empower Your Business Empire</image:title>
+      <image:caption>OB Pro Business Management and Inventory Tracking App</image:caption>
+    </image:image>
   </url>
+
+  <!-- Privacy Policy -->
   <url>
     <loc>https://obpro.netlify.app/privacy</loc>
-    <lastmod>2026-03-10</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.8</priority>
+    <lastmod>2026-03-10T04:15:00+00:00</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
+
+  <!-- Terms of Service -->
   <url>
     <loc>https://obpro.netlify.app/terms</loc>
-    <lastmod>2026-03-10</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.8</priority>
+    <lastmod>2026-03-10T04:15:00+00:00</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
+
 </urlset>

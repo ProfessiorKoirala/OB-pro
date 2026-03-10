@@ -157,6 +157,68 @@ interface MainScreenProps {
     onPremiumFeatureClick?: () => void;
 }
 
+const useSupabaseRealtimeSync = (user: User, data: AppDataBackup, setAppData: React.Dispatch<React.SetStateAction<AppDataBackup>>, isRemoteUpdate: React.MutableRefObject<boolean>, setSyncStatus: React.Dispatch<React.SetStateAction<SyncStatus>>) => {
+    const supabase = getSupabase();
+    const lastPushedData = useRef<string>("");
+    const channelRef = useRef<any>(null);
+
+    useEffect(() => {
+        if (!supabase || !user.email) return;
+
+        // Subscribe to Broadcast for sub-second "instant" feel across devices
+        const channel = supabase.channel(`user-sync-${user.email}`)
+            .on('broadcast', { event: 'sync-data' }, ({ payload }) => {
+                const remoteStr = JSON.stringify(payload);
+                if (remoteStr !== lastPushedData.current && remoteStr !== JSON.stringify(data)) {
+                    console.log("🚀 Supabase Broadcast: Instant update received");
+                    isRemoteUpdate.current = true;
+                    setAppData(mergeWithInitialData(payload));
+                    lastPushedData.current = remoteStr;
+                    setSyncStatus('Synced');
+                }
+            })
+            .subscribe();
+
+        channelRef.current = channel;
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user.email, setAppData, isRemoteUpdate, setSyncStatus]);
+
+    // Broadcast changes to other devices (Debounced)
+    useEffect(() => {
+        if (!supabase || !user.email || !data || isRemoteUpdate.current) {
+            isRemoteUpdate.current = false;
+            return;
+        }
+
+        const dataStr = JSON.stringify(data);
+        if (dataStr === lastPushedData.current) return;
+
+        const handler = setTimeout(async () => {
+            try {
+                lastPushedData.current = dataStr;
+                
+                // Broadcast instantly to other active devices
+                if (channelRef.current) {
+                    channelRef.current.send({
+                        type: 'broadcast',
+                        event: 'sync-data',
+                        payload: data
+                    });
+                }
+                // Note: We are NOT persisting to Supabase DB as per user request.
+                // Google Drive handles persistence.
+            } catch (err) {
+                console.error("Supabase broadcast error:", err);
+            }
+        }, 800);
+
+        return () => clearTimeout(handler);
+    }, [data, user.email, setSyncStatus]);
+};
+
 const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogout, onUpdateUser, onUpdateUserEmail, onDeleteUser, onPremiumFeatureClick }) => {
     const isDesktop = useMediaQuery('(min-width: 1024px)');
     const [appData, setAppData] = useState<AppDataBackup>(initialData);
@@ -201,6 +263,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
     
     useDebouncedSave(appData, activeUser, setSyncStatus, onLogout, setLastSaveTime, isRemoteUpdate);
     useRemoteSync(activeUser, lastSaveTime, setAppData, onLogout, isRemoteUpdate, setSyncStatus);
+    useSupabaseRealtimeSync(activeUser, appData, setAppData, isRemoteUpdate, setSyncStatus);
 
     // Sync activeUser security settings into appData for cloud backup
     useEffect(() => {

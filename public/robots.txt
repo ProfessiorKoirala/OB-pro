@@ -1,4 +1,29 @@
+# OB Pro Robots.txt
+# Optimized for Google, Bing, and Social Media Crawlers
+
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /config/
 
+# Specific rules for Googlebot
+User-agent: Googlebot
+Allow: /
+Allow: /index.html
+Allow: /privacy
+Allow: /terms
+
+# Specific rules for Bingbot
+User-agent: bingbot
+Crawl-delay: 1
+Allow: /
+
+# Social Media Crawlers
+User-agent: Twitterbot
+Allow: /
+User-agent: facebookexternalhit
+Allow: /
+
+# Sitemap Location
 Sitemap: https://obpro.netlify.app/sitemap.xml
