@@ -192,18 +192,18 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalLogin, onLocalSignUp, 
             </div>
             
             <footer className="mt-4 text-center space-x-4">
-                <button 
-                    onClick={() => window.location.href = '/privacy'}
+                <a 
+                    href="/privacy"
                     className="text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-black dark:hover:text-white transition-colors"
                 >
                     Privacy Policy
-                </button>
-                <button 
-                    onClick={() => window.location.href = '/terms'}
+                </a>
+                <a 
+                    href="/terms"
                     className="text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-black dark:hover:text-white transition-colors"
                 >
                     Terms of Service
-                </button>
+                </a>
             </footer>
         </div>
       </div>

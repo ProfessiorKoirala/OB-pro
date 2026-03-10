@@ -104,10 +104,14 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, onComplete }) => {
                     )}
                 </main>
 
-                <footer className="p-12 pb-16 flex flex-col items-center gap-2 transition-all duration-1000 delay-[2500ms]" style={{ opacity: phase === 'final' ? 1 : 0 }}>
-                    <span className="text-gray-300 dark:text-gray-700 font-black text-[10px] tracking-[0.5em] uppercase leading-none">Developed by</span>
-                    <div className="flex flex-col items-center">
+                <footer className="p-12 pb-16 flex flex-col items-center gap-4 transition-all duration-1000 delay-[2500ms]" style={{ opacity: phase === 'final' ? 1 : 0 }}>
+                    <div className="flex flex-col items-center gap-1">
+                        <span className="text-gray-300 dark:text-gray-700 font-black text-[10px] tracking-[0.5em] uppercase leading-none">Developed by</span>
                         <span className="text-black dark:text-white font-black text-2xl tracking-tighter italic leading-none uppercase">Ordinary Business</span>
+                    </div>
+                    <div className="flex gap-4">
+                        <a href="/privacy" className="text-[8px] font-bold text-gray-300 dark:text-gray-700 uppercase tracking-widest hover:text-black dark:hover:text-white transition-colors">Privacy Policy</a>
+                        <a href="/terms" className="text-[8px] font-bold text-gray-300 dark:text-gray-700 uppercase tracking-widest hover:text-black dark:hover:text-white transition-colors">Terms of Service</a>
                     </div>
                 </footer>
             </div>

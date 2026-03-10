@@ -199,18 +199,18 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
                     </span>
                 </div>
                 <div className="flex justify-center gap-4">
-                    <button 
-                        onClick={() => window.location.href = '/privacy'}
+                    <a 
+                        href="/privacy"
                         className="text-[8px] font-bold text-gray-300 dark:text-gray-700 uppercase tracking-widest hover:text-black dark:hover:text-white transition-colors"
                     >
                         Privacy Policy
-                    </button>
-                    <button 
-                        onClick={() => window.location.href = '/terms'}
+                    </a>
+                    <a 
+                        href="/terms"
                         className="text-[8px] font-bold text-gray-300 dark:text-gray-700 uppercase tracking-widest hover:text-black dark:hover:text-white transition-colors"
                     >
                         Terms of Service
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>
