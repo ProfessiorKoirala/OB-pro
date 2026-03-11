@@ -49,7 +49,7 @@ const AppContent: React.FC = () => {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    scopes: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+                    scopes: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
                     redirectTo: window.location.origin
                 }
             });
@@ -232,6 +232,7 @@ const AppContent: React.FC = () => {
     
     const loadUserData = useCallback(async (user: User): Promise<AppDataBackup> => {
         try {
+            // 1. Fallback to Google Drive
             if (user.accountType === 'google') {
                 if (!user.accessToken) {
                     throw new Error("Google user is missing an access token. Please log in again.");

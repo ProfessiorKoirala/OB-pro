@@ -6,7 +6,7 @@ export const GOOGLE_CLIENT_ID = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID |
 // --- SCOPES ---
 // drive.file: Per-file access to files created or opened by the app. The user can see these files in their Drive.
 // userinfo.email: To get the user's email address.
-export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.metadata.readonly';
+export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata';
 export const USERINFO_SCOPES = 'https://www.googleapis.com/auth/userinfo.email';
 export const COMBINED_SCOPES = `${DRIVE_SCOPE} ${USERINFO_SCOPES}`;
 const DATA_FILE_NAME = 'mynagerData.json';
